@@ -8,6 +8,6 @@ class App extends \BusyPHP\App
 {
     public function runningInConsole()
     {
-        return !!Context::getData('_fd');
+        return Context::hasData('_fd');
     }
 }

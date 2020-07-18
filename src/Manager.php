@@ -11,26 +11,22 @@ use think\swoole\concerns\InteractsWithRpcServer;
 use think\swoole\concerns\InteractsWithServer;
 use think\swoole\concerns\InteractsWithSwooleTable;
 use think\swoole\concerns\InteractsWithWebsocket;
-use think\swoole\PidManager;
 
 class Manager
 {
-    use InteractsWithServer;
-    use InteractsWithSwooleTable;
-    use InteractsWithHttp;
-    use InteractsWithWebsocket;
-    use InteractsWithPools;
-    use InteractsWithRpcClient;
-    use InteractsWithRpcServer;
-    use WithApplication;
+    use InteractsWithServer,
+        InteractsWithSwooleTable,
+        InteractsWithHttp,
+        InteractsWithWebsocket,
+        InteractsWithPools,
+        InteractsWithRpcClient,
+        InteractsWithRpcServer,
+        WithApplication;
     
     /**
      * @var App
      */
     protected $container;
-    
-    /** @var PidManager */
-    protected $pidManager;
     
     /**
      * Server events.
@@ -53,23 +49,19 @@ class Manager
         'request',
     ];
     
-    
     /**
      * Manager constructor.
-     * @param App        $container
-     * @param PidManager $pidManager
+     * @param App $container
      */
-    public function __construct(App $container, PidManager $pidManager)
+    public function __construct(App $container)
     {
-        $this->container  = $container;
-        $this->pidManager = $pidManager;
+        $this->container = $container;
     }
-    
     
     /**
      * Initialize.
      */
-    protected function initialize() : void
+    protected function initialize(): void
     {
         $this->prepareTables();
         $this->preparePools();
@@ -78,4 +70,5 @@ class Manager
         $this->prepareRpcServer();
         $this->prepareRpcClient();
     }
+    
 }

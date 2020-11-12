@@ -11,7 +11,11 @@
 	"license"     : "Apache-2.0",
 	"require"     : {
 		"busyphp/busyphp"       : "^3.0",
-		"topthink/think-swoole" : "^3.0"
+		"topthink/think-swoole" : "3.0.9",
+		"ext-json"              : "*"
+	},
+	"require-dev" : {
+		"symfony/var-dumper" : "^4.2"
 	},
 	"autoload"    : {
 		"psr-4" : {
@@ -22,10 +26,13 @@
 		"preferred-install" : "dist"
 	},
 	"extra"       : {
-		"busyphp" : {
+        "busyphp" : {
 			"services" : [
 				"BusyPHP\\swoole\\Service"
-			]
+			],
+			"config"   : {
+				"swoole" : "src/config.php"
+			}
 		}
 	}
 }

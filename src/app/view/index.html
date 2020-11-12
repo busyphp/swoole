@@ -1,0 +1,138 @@
+<extend name="@admin:layout"/>
+<block name="head"></block>
+<block name="content">
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <i class="icon icon-tachometer"></i>
+                    守护程序
+                </div>
+                <div class="panel-body">
+                    <div class="padding-5">
+                        <div data-status="wait">
+                            程序状态：<span class="text-muted">获取中...</span>
+                        </div>
+                        <div data-status="run" class="hide">
+                            程序状态：<span class="text-green">运行中 <i class="icon icon-play"></i></span>
+                        </div>
+                        <div data-status="stop" class="hide">
+                            程序状态：<span class="text-red">已停止 <i class="icon icon-stop"></i></span>
+                        </div>
+
+                        <div class="space-10"></div>
+                        <div>启动时间：<span class="text-muted" data-attr="format_start_time">获取中...</span></div>
+                        <div>运行时长：<span class="text-muted">已累计运行<span data-attr="format_continue">0秒</span></span></div>
+                        <div class="space-15"></div>
+                        <hr class="no-margin-top no-margin-bottom"/>
+                        <div class="space-15"></div>
+                        <div>
+                            <a class="btn btn-default" href="{$reload_url}" data-get-confirm="确认要 <b class='text-red size-16'>重载配置</b> 吗？" role-ajax="1" role-loading="重载中...">
+                                <i class="icon icon-refresh"></i>
+                                柔性重启
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <i class="icon icon-tachometer"></i>
+                    运行信息
+                </div>
+                <table class="table table-bordered">
+                    <tr>
+                        <td width="130">连接的数量</td>
+                        <td>
+                            已连接
+                            <b class="text-green" data-attr="connection_num">0</b>
+                            个， 已关闭
+                            <b class="text-red" data-attr="accept_count">0</b>
+                            个
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>工作进程数</td>
+                        <td>
+                            共计
+                            <b class="text-blue" data-attr="worker_num">0</b>
+                            个，空闲
+                            <b class="text-green" data-attr="idle_worker_num">0</b>
+                            个
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>任务进程数</td>
+                        <td>
+                            共计
+                            <b class="text-blue" data-attr="task_worker_num">0</b>
+                            个，排队
+                            <b class="text-red" data-attr="tasking_num">0</b>
+                            个，空闲
+                            <b class="text-green" data-attr="task_idle_worker_num">0</b>
+                            个
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>请求/发送数</td>
+                        <td>
+                            请求
+                            <b class="text-green" data-attr="request_count">0</b>
+                            个，发送
+                            <b class="text-red" data-attr="dispatch_count">0</b>
+                            个
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>进程请求/投递次数</td>
+                        <td>
+                            请求
+                            <b class="text-green" data-attr="worker_request_count">0</b>
+                            个，发送
+                            <b class="text-red" data-attr="worker_dispatch_count">0</b>
+                            个
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</block>
+<block name="foot">
+    <script>
+        $(function () {
+            function displayStats(data) {
+                $('[data-status]').addClass('hide');
+                if (false === data) {
+                    $('[data-status="stop"]').removeClass('hide');
+                    $('[data-attr="format_start_time"]').text('程序未启动');
+                } else {
+                    $('[data-status="run"]').removeClass('hide');
+
+                    for (var key in data) {
+                        $('[data-attr="' + key + '"]').text(data[key]);
+                    }
+                }
+
+
+                setTimeout(function () {
+                    getStats();
+                }, 5000)
+            }
+
+            function getStats() {
+                $.getInfo('{$stats_url}', function (data) {
+                    displayStats(data.data);
+                }, function (data) {
+                    console.log(data);
+                    displayStats(false);
+                });
+            }
+
+            getStats();
+        });
+
+    </script>
+</block>

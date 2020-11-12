@@ -10,3 +10,4 @@ composer.json.dev
 /core/
 /runtime/
 /public/
+.env

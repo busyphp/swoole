@@ -143,7 +143,8 @@ class ManagerController extends AdminCurdController
         $url = (string) url($url, [
             'swoole' => 1,
             '_ajax'  => 1
-        ])->domain($this->getConfig('server.host') . ':' . $this->getConfig('server.port'));
+        ]);
+        $url = 'http://' . $this->getConfig('server.host') . ':' . $this->getConfig('server.port') . $url;
         
         try {
             $http = Http::init();
@@ -158,7 +159,7 @@ class ManagerController extends AdminCurdController
             
             return json_decode($result, true);
         } catch (\Exception $e) {
-            throw new AppException('无法链接守护程序');
+            throw new AppException("{$url}无法链接守护程序<br />{$e->getMessage()}");
         }
     }
     

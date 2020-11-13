@@ -159,7 +159,7 @@ class ManagerController extends AdminCurdController
             
             return json_decode($result, true);
         } catch (\Exception $e) {
-            throw new AppException("{$url}无法链接守护程序<br />{$e->getMessage()}");
+            throw new AppException("无法链接守护程序<br />{$url}<br />{$e->getMessage()}");
         }
     }
     

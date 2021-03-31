@@ -2,10 +2,8 @@
 
 namespace BusyPHP\swoole;
 
-use BusyPHP\Handle;
 use BusyPHP\swoole\app\controller\InstallController;
 use BusyPHP\swoole\app\controller\ManagerController;
-use think\Response;
 use think\Route;
 
 /**
@@ -53,14 +51,6 @@ class Service extends \think\Service
                 
                 $route->mergeRuleRegex(true);
             }
-        });
-        
-        // 移除捕获，不输出html
-        $this->app->event->listen(Handle::$renderEvent, function($params) {
-            // BusyPHP\Request  $params[0];
-            // \Throwable       $params[1];
-            
-            return Response::create('');
         });
         
         $this->commands(Server::class);

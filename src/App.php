@@ -11,4 +11,10 @@ class App extends \BusyPHP\App
     {
         return Context::hasData('_fd');
     }
+    
+    
+    public function clearInstances()
+    {
+        $this->instances = [];
+    }
 }

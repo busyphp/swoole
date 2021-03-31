@@ -7,6 +7,7 @@ use BusyPHP\swoole\pool\Db;
 use BusyPHP\swoole\App as swooleApp;
 use Closure;
 use Swoole\Server;
+use think\swoole\concerns\InteractsWithCoordinator;
 use think\swoole\pool\Cache;
 use think\swoole\Sandbox;
 use Throwable;
@@ -18,6 +19,8 @@ use Throwable;
  */
 trait WithApplication
 {
+    use InteractsWithCoordinator;
+    
     /**
      * @var swooleApp
      */
@@ -69,6 +72,9 @@ trait WithApplication
             //绑定连接池
             if ($this->getConfig('pool.db.enable', true)) {
                 $this->app->bind('db', Db::class);
+                $this->app->resolving(Db::class, function (Db $db) {
+                    $db->setLog($this->container->log);
+                });
             }
             if ($this->getConfig('pool.cache.enable', true)) {
                 $this->app->bind('cache', Cache::class);

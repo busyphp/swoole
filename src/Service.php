@@ -2,8 +2,10 @@
 
 namespace BusyPHP\swoole;
 
+use BusyPHP\Handle;
 use BusyPHP\swoole\app\controller\InstallController;
 use BusyPHP\swoole\app\controller\ManagerController;
+use think\Response;
 use think\Route;
 
 /**
@@ -21,8 +23,8 @@ class Service extends \think\Service
         // 注册管理路由
         $this->registerRoutes(function(Route $route) {
             $route->rule('general/plugin/install/swoole', InstallController::class . '@index');
-    
-    
+            
+            
             // 后台路由
             if ($this->app->http->getName() === 'admin') {
                 $prefix = $this->getSwooleConfig('admin.manager.menu.action_prefix', 'swoole');
@@ -51,6 +53,14 @@ class Service extends \think\Service
                 
                 $route->mergeRuleRegex(true);
             }
+        });
+        
+        // 移除捕获，不输出html
+        $this->app->event->listen(Handle::$renderEvent, function($params) {
+            // BusyPHP\Request  $params[0];
+            // \Throwable       $params[1];
+            
+            return Response::create('');
         });
         
         $this->commands(Server::class);

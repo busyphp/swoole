@@ -3,9 +3,9 @@
 namespace BusyPHP\swoole;
 
 use BusyPHP\App;
+use BusyPHP\swoole\concerns\InteractsWithPools;
 use BusyPHP\swoole\concerns\WithApplication;
 use think\swoole\concerns\InteractsWithHttp;
-use think\swoole\concerns\InteractsWithPools;
 use think\swoole\concerns\InteractsWithRpcClient;
 use think\swoole\concerns\InteractsWithRpcServer;
 use think\swoole\concerns\InteractsWithServer;

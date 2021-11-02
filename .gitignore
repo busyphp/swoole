@@ -12,3 +12,4 @@ composer.json.dev
 /public/
 .env
 think
+composer.phar

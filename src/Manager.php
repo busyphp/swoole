@@ -58,6 +58,7 @@ class Manager extends ThinkManager
             $request = $this->prepareRequest($req);
             
             $_SERVER['VAR_DUMPER_FORMAT'] = 'html';
+            $_SERVER['SERVER_SOFTWARE']   = 'Swoole ' . swoole_version();
             try {
                 $response = $this->handleRequest($http, $request);
             } catch (Throwable $e) {

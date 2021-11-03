@@ -55,8 +55,6 @@ class Manager extends ThinkManager
         $this->runWithBarrier([$this, 'runInSandbox'], function(Http $http, Event $event, App $app) use ($req, $res) {
             $app->setInConsole(false);
             
-            dump(get_class($app));
-            
             $request = $this->prepareRequest($req);
             
             $_SERVER['VAR_DUMPER_FORMAT'] = 'html';

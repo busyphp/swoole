@@ -2,14 +2,20 @@
 
 namespace BusyPHP\swoole;
 
-use think\swoole\coroutine\Context;
-
-
 class App extends \BusyPHP\App
 {
-    public function runningInConsole()
+    protected $inConsole = true;
+    
+    
+    public function setInConsole($inConsole = true)
     {
-        return Context::hasData('_fd');
+        $this->inConsole = $inConsole;
+    }
+    
+    
+    public function runningInConsole() : bool
+    {
+        return $this->inConsole;
     }
     
     

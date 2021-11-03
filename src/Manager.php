@@ -2,73 +2,73 @@
 
 namespace BusyPHP\swoole;
 
-use BusyPHP\App;
-use BusyPHP\swoole\concerns\InteractsWithPools;
-use BusyPHP\swoole\concerns\WithApplication;
-use think\swoole\concerns\InteractsWithHttp;
-use think\swoole\concerns\InteractsWithRpcClient;
-use think\swoole\concerns\InteractsWithRpcServer;
-use think\swoole\concerns\InteractsWithServer;
-use think\swoole\concerns\InteractsWithSwooleTable;
-use think\swoole\concerns\InteractsWithWebsocket;
+use think\Event;
+use think\exception\Handle;
+use think\Http;
+use think\swoole\Manager as ThinkManager;
+use think\swoole\pool\Cache;
+use Throwable;
 
-class Manager
+/**
+ *
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/11/3 下午上午11:57 Manager.php $
+ * @method App getApplication()
+ */
+class Manager extends ThinkManager
 {
-    use InteractsWithServer,
-        InteractsWithSwooleTable,
-        InteractsWithHttp,
-        InteractsWithWebsocket,
-        InteractsWithPools,
-        InteractsWithRpcClient,
-        InteractsWithRpcServer,
-        WithApplication;
-    
     /**
-     * @var App
+     * 覆盖 {@see \think\swoole\App} 为 {@see \BusyPHP\swoole\App}
+     * 覆盖 {@see \think\swoole\Db} 为 {@see \BusyPHP\swoole\Db}
+     * @param string $envName
      */
-    protected $container;
-    
-    /**
-     * Server events.
-     *
-     * @var array
-     */
-    protected $events = [
-        'start',
-        'shutDown',
-        'workerStart',
-        'workerStop',
-        'workerError',
-        'workerExit',
-        'packet',
-        'task',
-        'finish',
-        'pipeMessage',
-        'managerStart',
-        'managerStop',
-        'request',
-    ];
-    
-    /**
-     * Manager constructor.
-     * @param App $container
-     */
-    public function __construct(App $container)
+    protected function prepareApplication(string $envName)
     {
-        $this->container = $container;
+        if (!$this->app instanceof App) {
+            $this->app = new App($this->container->getRootPath());
+            $this->app->setEnvName($envName);
+            $this->app->bind(App::class, \think\App::class);
+            $this->app->bind(Manager::class, $this);
+            //绑定连接池
+            if ($this->getConfig('pool.db.enable', true)) {
+                $this->app->bind('db', Db::class);
+                $this->app->resolving(Db::class, function(Db $db) {
+                    $db->setLog($this->container->log);
+                });
+            }
+            if ($this->getConfig('pool.cache.enable', true)) {
+                $this->app->bind('cache', Cache::class);
+            }
+            $this->app->initialize();
+            $this->prepareConcretes();
+        }
     }
     
-    /**
-     * Initialize.
-     */
-    protected function initialize(): void
-    {
-        $this->prepareTables();
-        $this->preparePools();
-        $this->prepareWebsocket();
-        $this->setSwooleServerListeners();
-        $this->prepareRpcServer();
-        $this->prepareRpcClient();
-    }
     
+    /**
+     * 覆盖 {@see \think\swoole\App} 为 {@see \BusyPHP\swoole\App}
+     * @inheritDoc
+     */
+    public function onRequest($req, $res)
+    {
+        $this->runWithBarrier([$this, 'runInSandbox'], function(Http $http, Event $event, App $app) use ($req, $res) {
+            $app->setInConsole(false);
+            
+            dump(get_class($app));
+            
+            $request = $this->prepareRequest($req);
+            
+            $_SERVER['VAR_DUMPER_FORMAT'] = 'html';
+            try {
+                $response = $this->handleRequest($http, $request);
+            } catch (Throwable $e) {
+                $response = $this->app->make(Handle::class)->render($request, $e);
+            } finally {
+                unset($_SERVER['VAR_DUMPER_FORMAT']);
+            }
+            
+            $this->sendResponse($res, $response, $app->cookie);
+        });
+    }
 }

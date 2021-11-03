@@ -1,14 +1,4 @@
 <?php
-// +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK IT ]
-// +----------------------------------------------------------------------
-// | Copyright (c) 2006-2018 http://thinkphp.cn All rights reserved.
-// +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
-// +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
-// +----------------------------------------------------------------------
-
 namespace BusyPHP\swoole\command;
 
 use Swoole\Http\Server as HttpServer;
@@ -30,7 +20,7 @@ class Server extends Command
     {
         $this->setName('swoole')
             ->addArgument('action', Argument::OPTIONAL, 'start|stop|restart|reload', 'start')
-            ->setDescription('Swoole HTTP Server for ThinkPHP');
+            ->setDescription('Swoole HTTP Server for BusyPHP');
     }
     
     

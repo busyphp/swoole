@@ -1,15 +1,15 @@
 <?php
 
-namespace BusyPHP\swoole;
+namespace BusyPHP\swoole\pool;
 
+use think\Config;
 use think\db\ConnectionInterface;
-use think\swoole\pool\proxy\Connection;
+use BusyPHP\swoole\pool\proxy\Connection;
 
 /**
- * 数据库类
- * @author busy^life <busy.life@qq.com>
- * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
- * @version $Id: 2021/11/2 下午下午9:44 Db.php $
+ * Class Db
+ * @package BusyPHP\swoole\pool
+ * @property Config $config
  */
 class Db extends \BusyPHP\Db
 {

@@ -125,7 +125,7 @@ return [
 
 #### 创建任务类
 
-> 单任务类推荐集成 `\BusyPHP\swoole\contract\WorkerInterface` 接口类，以便编辑器辅助提示 <br />
+> 单任务类推荐集成 `\BusyPHP\swoole\contract\JobInterface` 接口类，以便编辑器辅助提示 <br />
 > 如果有多个小任务，就写多个方法，下面发布任务的时候会有区别
 
 ##### 下面写两个例子
@@ -134,10 +134,10 @@ return [
 <?php
 namespace app\job;
 
-use BusyPHP\swoole\contract\WorkerInterface;
+use BusyPHP\swoole\contract\JobInterface;
 use think\queue\Job;
 
-class Job1 implements WorkerInterface
+class Job1 implements JobInterface
 {
     /**
      * 执行任务

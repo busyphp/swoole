@@ -1,0 +1,188 @@
+<extend name="@admin:layout"/>
+<block name="content">
+    <template id="swooleManagerApp">
+        <div class="panel panel-default no-radius no-margin">
+            <div class="panel-heading">
+                当前运行状态
+                <div class="pull-right">
+                    <span class="text-muted" v-if="loading && first"><i class="fa fa-spinner fa-spin"></i> 获取中...</span>
+                    <template v-else>
+                        <span class="text-danger" v-if="error"><i class="fa fa-stop"></i> 未启动</span>
+                        <span class="text-success" v-else><i class="fa fa-pause"></i> 运行中</span>
+                    </template>
+                </div>
+            </div>
+            <div class="panel-body" v-if="loading && first">
+                <i class="fa fa-spinner fa-spin"></i> 获取中...
+            </div>
+            <template v-else>
+                <div class="panel-body" v-if="error">
+                    <div class="alert alert-warning alert-sm no-margin">
+                        <i class="fa fa-warning"></i> 未启动原因：<br/>
+                        <div>{{errorMessage}}</div>
+                        <div>请按照下方命令进行重启</div>
+                    </div>
+                </div>
+                <template v-else>
+                    <div class="panel-body">
+                        启动时间：<span class="text-success">{{info.format_start_time}}</span><br/>
+                        累计运行：<span class="text-success">{{info.format_continue}}</span>
+                        <div class="space-10"></div>
+                        <a class="btn btn-success" data-toggle="busy-request" data-confirm="确认要刷新服务吗？" data-url="{:url('plugins_swoole/reload')}" data-on-success="busyAdmin.data.reloadSuccess"><i class="fa fa-refresh"></i> 刷新服务</a>
+                        <div class="space-10"></div>
+                        <div class="text-muted">注意：刷新服务只能重载部分代码，并不能重载全部代码，如果发现逻辑未发生更改，请使用命令行重启</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">运行信息</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th width="120">连接的数量</th>
+                                    <td>
+                                        已连接
+                                        <b class="text-green">{{info.connection_num}}</b>
+                                        个， 已关闭
+                                        <b class="text-danger">{{info.accept_count}}</b>
+                                        个
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>工作进程数</th>
+                                    <td>
+                                        共计
+                                        <b class="text-blue">{{info.worker_num}}</b>
+                                        个， 空闲
+                                        <b class="text-success">{{info.idle_worker_num}}</b>
+                                        个
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>任务进程数</th>
+                                    <td>
+                                        共计
+                                        <b class="text-primary">{{info.task_worker_num}}</b>
+                                        个， 排队
+                                        <b class="text-danger">{{info.tasking_num}}</b>
+                                        个， 空闲
+                                        <b class="text-success">{{info.task_idle_worker_num}}</b>
+                                        个
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>HTTP请求数</th>
+                                    <td>
+                                        请求
+                                        <b class="text-success">{{info.request_count}}</b>
+                                        个，发送
+                                        <b class="text-danger">{{info.dispatch_count}}</b>
+                                        个
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>进程请求数</th>
+                                    <td>
+                                        请求
+                                        <b class="text-success">{{info.worker_request_count}}</b>
+                                        个，发送
+                                        <b class="text-danger">{{info.worker_dispatch_count}}</b>
+                                        个
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </template>
+            <div class="panel-heading">
+                启动命令
+            </div>
+            <div class="panel-body">
+                <code>cd</code> 到 <code><?=\BusyPHP\App::getInstance()->getRootPath()?></code> 目录下执行执行：<br/>
+                <kbd>启动命令</kbd> <code>php think swoole</code> 或 <code>php think swoole start</code><br/>
+                <kbd>重启命令</kbd> <code>php think swoole restart</code><br/>
+                <kbd>停止命令</kbd> <code>php think swoole stop</code><br/>
+                <br/>
+                在指定用户下执行，以保证目录及文件权限不被 <code>root</code> 用户篡改。宝塔示例：<br/>
+                <kbd>启动命令</kbd> <code>su -c "php think swoole start" -s /bin/sh www</code><br/>
+                <kbd>重启命令</kbd> <code>su -c "php think swoole restart" -s /bin/sh www</code><br/>
+                <kbd>停止命令</kbd> <code>su -c "php think swoole stop" -s /bin/sh www</code>
+            </div>
+        </div>
+    </template>
+</block>
+<block name="foot">
+    <script>
+        busyAdmin.ready(function () {
+            busyAdmin.require([busyAdmin.lib.vue], function (Vue) {
+                var app = new Vue({
+                    el      : '#swooleManagerApp',
+                    data    : {
+                        loading      : true,
+                        error        : false,
+                        errorMessage : '',
+                        info         : {},
+                        timer        : null,
+                        request      : null,
+                        first        : true,
+                    },
+                    mounted : function () {
+                        this.getInfo();
+                    },
+                    methods : {
+                        getInfo : function () {
+                            var me = this;
+                            clearTimeout(me.timer);
+                            if (me.request) {
+                                me.request.abort();
+                                me.request = null;
+                            }
+
+                            me.first   = false;
+                            me.error   = false;
+                            me.loading = true;
+                            me.request = busyAdmin
+                                .request('{:url("plugins_swoole/info")}')
+                                .pending(false)
+                                .complete(function (response, type, xhr) {
+                                    me.loading = false;
+
+                                    me.timer = setTimeout(function () {
+                                        me.getInfo();
+                                    }, 1000 * 10);
+                                })
+                                .error(function (response, type, xhr) {
+                                    me.error        = true;
+                                    me.errorMessage = response.message;
+                                    me.resize();
+
+                                    return false;
+                                })
+                                .success(function (response, type, xhr) {
+                                    me.error = false;
+                                    me.info  = response.result;
+                                    me.resize();
+
+                                    return false;
+                                })
+                                .exec();
+                        }
+                    },
+
+                    resize : function () {
+                        setTimeout(function () {
+                            busyAdmin.app.triggerResize();
+                        }, 500);
+                    }
+                });
+
+                busyAdmin.data.reloadSuccess = function () {
+                    app.getInfo();
+                };
+            });
+        });
+    </script>
+</block>

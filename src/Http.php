@@ -2,7 +2,11 @@
 
 namespace BusyPHP\swoole;
 
+use BusyPHP\Request;
+use ReflectionException;
+use think\Http as ThinkHttp;
 use think\Middleware;
+use think\Response;
 use think\Route;
 use BusyPHP\swoole\concerns\ModifyProperty;
 
@@ -11,19 +15,26 @@ use BusyPHP\swoole\concerns\ModifyProperty;
  * @author busy^life <busy.life@qq.com>
  * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
  * @version $Id: 2021/11/3 下午9:17 Http.php $
- * @property $request
  */
-class Http extends \think\Http
+class Http extends ThinkHttp
 {
     use ModifyProperty;
     
-    /** @var Middleware */
+    /**
+     * @var Middleware
+     */
     protected static $middleware;
     
-    /** @var Route */
+    /**
+     * @var Route
+     */
     protected static $route;
     
     
+    /**
+     * 加载中间件
+     * @throws ReflectionException
+     */
     protected function loadMiddleware() : void
     {
         if (!isset(self::$middleware)) {
@@ -38,10 +49,15 @@ class Http extends \think\Http
     }
     
     
+    /**
+     * 加载路由
+     * @throws ReflectionException
+     */
     protected function loadRoutes() : void
     {
+        parent::loadRoutes(); // 每次都重载路由
+        
         if (!isset(self::$route)) {
-            parent::loadRoutes();
             self::$route = clone $this->app->route;
             $this->modifyProperty(self::$route, null);
             $this->modifyProperty(self::$route, null, 'request');
@@ -49,6 +65,12 @@ class Http extends \think\Http
     }
     
     
+    /**
+     * 调度路由
+     * @param Request $request
+     * @return Response
+     * @throws ReflectionException
+     */
     protected function dispatchToRoute($request)
     {
         if (isset(self::$route)) {

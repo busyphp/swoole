@@ -1,7 +1,8 @@
 {
 	"name"        : "busyphp/swoole",
 	"type"        : "library",
-	"description" : "",
+	"description" : "支持异步数据处理，如批量发送邮件、短信等。可用于创建Http服务器，Websocket服务器、Rpc服务器等脱离Apache、Nginx等服务器独立运行，独立运行环境下支持Swoole携程开发",
+	"homepage"    : "http://www.harter.cn/?form=BusyPHP&plugin=busyphp/swoole",
 	"authors"     : [
 		{
 			"name"  : "busy^life",
@@ -10,29 +11,59 @@
 	],
 	"license"     : "Apache-2.0",
 	"require"     : {
-		"busyphp/busyphp"       : "^3.0",
-		"topthink/think-swoole" : "3.1.2",
-		"ext-json"              : "*"
+		"ext-json"                     : "*",
+		"ext-swoole"                   : ">=4.4.8",
+		"jcchavezs/zipkin-opentracing" : "^1.0",
+		"nette/php-generator"          : "^3.2",
+		"open-smf/connection-pool"     : "~1.0",
+		"stechstudio/backoff"          : "^1.2",
+		"swoole/ide-helper"            : "^4.3",
+		"symfony/finder"               : "^4.3.2|^5.1",
+		"busyphp/busyphp"              : "^6.0",
+		"topthink/think-tracing"       : "^1.0",
+		"topthink/think-queue"         : "^3.0"
 	},
 	"require-dev" : {
-		"symfony/var-dumper" : "^4.2"
+		"symfony/var-dumper" : "^4.3|^5.1"
 	},
 	"autoload"    : {
 		"psr-4" : {
 			"BusyPHP\\swoole\\" : "src"
-		}
+		},
+		"files" : [
+			"src/helpers.php"
+		]
 	},
 	"config"      : {
-		"preferred-install" : "dist"
+		"preferred-install" : "dist",
+		"sort-packages"     : true,
+		"platform-check"    : false,
+		"platform"          : {
+			"ext-swoole"   : "4.4.8",
+			"ext-fileinfo" : "1.0.4"
+		}
 	},
 	"extra"       : {
+		"think"   : {
+			"config" : {
+				"swoole" : "src/config/swoole.php"
+			}
+		},
 		"busyphp" : {
+			"manager"  : {
+				"name"    : "Swoole守护程序",
+				"class"   : "BusyPHP\\swoole\\app\\controller\\ManagerController",
+				"setting" : {
+					"footer"        : false,
+					"type"          : "page",
+					"border_top"    : false,
+					"border_bottom" : false,
+					"padding"       : "0px"
+				}
+			},
 			"services" : [
 				"BusyPHP\\swoole\\Service"
-			],
-			"config"   : {
-				"swoole" : "src/config.php"
-			}
+			]
 		}
 	}
 }

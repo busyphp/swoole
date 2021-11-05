@@ -1,8 +1,8 @@
 <?php
 
-namespace BusyPHP\swoole\tcp;
+namespace BusyPHP\swoole\tcp\handler;
 
-use BusyPHP\swoole\contract\tcp\TcpHandleInterface;
+use BusyPHP\swoole\contract\tcp\TcpHandlerInterface;
 use Swoole\Server;
 
 /**
@@ -11,7 +11,7 @@ use Swoole\Server;
  * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
  * @version $Id: 2021/11/5 上午10:51 TcpHandle.php $
  */
-class TcpHandle implements TcpHandleInterface
+class TcpHandler implements TcpHandlerInterface
 {
     /**
      * @inheritDoc

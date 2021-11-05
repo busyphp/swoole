@@ -1,6 +1,6 @@
 <?php
 
-use BusyPHP\swoole\tcp\TcpHandle;
+use BusyPHP\swoole\tcp\handler\TcpHandler;
 use BusyPHP\swoole\websocket\socketio\Handler;
 
 return [
@@ -122,7 +122,7 @@ return [
         'exclude_ip' => ['127.0.0.1'],
         
         // 处理器，必须集成 \BusyPHP\swoole\contract\tcp\TcpHandleInterface 接口
-        'handler'    => TcpHandle::class
+        'handler'    => TcpHandler::class
     ],
     
     // 热更新

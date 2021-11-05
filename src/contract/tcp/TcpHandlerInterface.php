@@ -10,7 +10,7 @@ use Swoole\Server;
  * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
  * @version $Id: 2021/11/5 上午10:43 TcpHandleInterface.php $
  */
-interface TcpHandleInterface
+interface TcpHandlerInterface
 {
     /**
      * 客户端于TCP建立连接事件

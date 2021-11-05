@@ -15,7 +15,13 @@ use BusyPHP\swoole\rpc\Packer;
 use BusyPHP\swoole\rpc\Protocol;
 use BusyPHP\swoole\rpc\Sendfile;
 
-class Gateway
+/**
+ * RPC网关
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/11/5 下午1:19 RpcGateway.php $
+ */
+class RpcGateway
 {
     use Sendfile;
     

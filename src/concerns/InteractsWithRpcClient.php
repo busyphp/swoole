@@ -8,7 +8,7 @@ use Swoole\Server;
 use BusyPHP\swoole\Pool;
 use BusyPHP\swoole\pool\Client;
 use BusyPHP\swoole\rpc\client\Connector;
-use BusyPHP\swoole\rpc\client\Gateway;
+use BusyPHP\swoole\rpc\client\RpcGateway;
 use BusyPHP\swoole\rpc\client\Proxy;
 use BusyPHP\swoole\rpc\JsonRpcParser;
 use Throwable;
@@ -44,7 +44,7 @@ trait InteractsWithRpcClient
                 foreach ($rpcServices as $name => $abstracts) {
                     $parserClass = $this->getConfig("rpc.client.{$name}.parser", JsonRpcParser::class);
                     $parser      = $this->getApplication()->make($parserClass);
-                    $gateway     = new Gateway($this->createRpcConnector($name), $parser);
+                    $gateway     = new RpcGateway($this->createRpcConnector($name), $parser);
                     $middleware  = $this->getConfig("rpc.client.{$name}.middleware", []);
                     
                     foreach ($abstracts as $abstract) {

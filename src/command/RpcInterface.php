@@ -9,7 +9,7 @@ use Nette\PhpGenerator\PhpFile;
 use think\console\Command;
 use think\helper\Arr;
 use BusyPHP\swoole\contract\rpc\RpcParserInterface;
-use BusyPHP\swoole\rpc\client\Gateway;
+use BusyPHP\swoole\rpc\client\RpcGateway;
 use BusyPHP\swoole\rpc\JsonRpcParser;
 use function Swoole\Coroutine\run;
 
@@ -36,7 +36,7 @@ class RpcInterface extends Command
                 /** @var RpcParserInterface $parser */
                 $parser = new $parserClass;
                 
-                $gateway = new Gateway($config, $parser);
+                $gateway = new RpcGateway($config, $parser);
                 
                 $result = $gateway->getServices();
                 

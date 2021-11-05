@@ -14,7 +14,7 @@ abstract class Proxy
 {
     protected $interface;
     
-    /** @var Gateway */
+    /** @var RpcGateway */
     protected $gateway;
     
     /** @var App */
@@ -23,7 +23,7 @@ abstract class Proxy
     protected $middleware = [];
     
     
-    final public function __construct(App $app, Gateway $gateway, $middleware)
+    final public function __construct(App $app, RpcGateway $gateway, $middleware)
     {
         $this->app        = $app;
         $this->gateway    = $gateway;

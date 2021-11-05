@@ -1,6 +1,6 @@
 <?php
 
-namespace BusyPHP\swoole\tcp;
+namespace BusyPHP\swoole\tcp\client;
 
 use BusyPHP\App;
 use BusyPHP\exception\VerifyException;

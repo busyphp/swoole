@@ -6,7 +6,9 @@ use BusyPHP\App;
 use BusyPHP\swoole\concerns\InteractsWithCoordinator;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
-use BusyPHP\swoole\contract\tcp\TcpHandleInterface;
+use BusyPHP\swoole\contract\tcp\TcpHandlerInterface;
+use BusyPHP\swoole\tcp\client\TcpGateway;
+use BusyPHP\swoole\tcp\handler\TcpHandler;
 use Swoole\Server;
 use Swoole\Server\Port;
 
@@ -36,23 +38,23 @@ class Manager
     protected function prepareTcpServer()
     {
         $this->onEvent('workerStart', function(App $app) {
-            $handler         = $this->getConfig('tcp.handler', '') ?: TcpHandle::class;
+            $handler         = $this->getConfig('tcp.handler', '') ?: TcpHandler::class;
             $this->excludeIp = $this->getConfig('tcp.exclude_ip', []);
             
             $this->app = $app;
-            $this->app->bind(TcpHandleInterface::class, $handler);
-            $this->app->make(TcpHandleInterface::class);
+            $this->app->bind(TcpHandlerInterface::class, $handler);
+            $this->app->make(TcpHandlerInterface::class);
         });
     }
     
     
     /**
      * 获取TCP事件对象
-     * @return TcpHandleInterface
+     * @return TcpHandlerInterface
      */
-    protected function getHandle() : TcpHandleInterface
+    protected function getHandle() : TcpHandlerInterface
     {
-        return $this->app->make(TcpHandleInterface::class);
+        return $this->app->make(TcpHandlerInterface::class);
     }
     
     

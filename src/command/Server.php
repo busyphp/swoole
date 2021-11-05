@@ -15,7 +15,9 @@ use BusyPHP\swoole\PidManager;
 
 /**
  * Swoole HTTP 命令行，支持操作：start|stop|restart|reload
- * 支持应用配置目录下的swoole.php文件进行参数配置
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/11/5 上午9:56 Server.php $
  * @property App $app
  */
 class Server extends Command

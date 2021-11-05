@@ -21,9 +21,22 @@ use BusyPHP\swoole\rpc\server\Channel;
 use BusyPHP\swoole\rpc\server\Dispatcher;
 use Throwable;
 
+/**
+ * RPC管理类
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/11/5 上午10:18 Manager.php $
+ */
 class Manager
 {
-    use InteractsWithCoordinator, InteractsWithServer, InteractsWithSwooleTable, InteractsWithPools, InteractsWithRpcClient, InteractsWithQueue, WithContainer, WithApplication;
+    use InteractsWithCoordinator;
+    use InteractsWithServer;
+    use InteractsWithSwooleTable;
+    use InteractsWithPools;
+    use InteractsWithRpcClient;
+    use InteractsWithQueue;
+    use WithContainer;
+    use WithApplication;
     
     /**
      * Server events.

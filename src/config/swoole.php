@@ -20,12 +20,6 @@ return [
         // swoole配置
         // 请参考: https://wiki.swoole.com/#/server/setting
         'options'   => [
-            // 设置 pid 文件地址
-            'pid_file'              => runtime_path() . 'swoole.pid',
-            
-            // 指定 Swoole 错误日志文件
-            'log_file'              => runtime_path() . 'swoole.log',
-            
             // 是否开启守护进程模式
             'daemonize'             => false,
             

@@ -1,7 +1,10 @@
 <?php
+
 namespace BusyPHP\swoole\command;
 
+use BusyPHP\App;
 use Swoole\Http\Server as HttpServer;
+use Swoole\Server as SwooleServer;
 use Swoole\WebSocket\Server as WebsocketServer;
 use think\console\Command;
 use think\console\Input;
@@ -13,6 +16,7 @@ use BusyPHP\swoole\PidManager;
 /**
  * Swoole HTTP 命令行，支持操作：start|stop|restart|reload
  * 支持应用配置目录下的swoole.php文件进行参数配置
+ * @property App $app
  */
 class Server extends Command
 {
@@ -26,12 +30,23 @@ class Server extends Command
     
     protected function initialize(Input $input, Output $output)
     {
-        $this->app->bind(\Swoole\Server::class, function() {
+        $this->app->bind(SwooleServer::class, function() {
             return $this->createSwooleServer();
         });
         
         $this->app->bind(PidManager::class, function() {
-            return new PidManager($this->app->config->get('swoole.server.options.pid_file'));
+            $pidFile = $this->app->config->get('swoole.server.options.pid_file', '');
+            $pidFile = $pidFile ?: $this->app->getRuntimeRootPath('swoole/run.pid');
+            $pidDir  = dirname($pidFile);
+            if (!is_dir($pidDir)) {
+                if (!mkdir($pidDir, 0775, true)) {
+                    $this->output->error("Unable to create directory {$pidDir}");
+                    
+                    exit(1);
+                }
+            }
+            
+            return new PidManager($pidFile);
         });
     }
     
@@ -181,10 +196,22 @@ class Server extends Command
         $socketType  = $config->get('swoole.server.socket_type', SWOOLE_SOCK_TCP);
         $mode        = $config->get('swoole.server.mode', SWOOLE_PROCESS);
         
-        /** @var \Swoole\Server $server */
+        /** @var SwooleServer $server */
         $server = new $serverClass($host, $port, $mode, $socketType);
         
         $options = $config->get('swoole.server.options');
+        
+        // 日志文件
+        $options['log_file'] = $options['log_file'] ?? '';
+        $options['log_file'] = $options['log_file'] ?: $this->app->getRuntimeRootPath('swoole/run.log');
+        $logDir              = dirname($options['log_file']);
+        if (!is_dir($logDir)) {
+            if (!mkdir($logDir, 0775, true)) {
+                $this->output->error("Unable to create directory {$logDir}");
+                
+                exit(1);
+            }
+        }
         
         $server->set($options);
         

@@ -1,5 +1,6 @@
 <?php
 
+use BusyPHP\swoole\tcp\TcpHandle;
 use BusyPHP\swoole\websocket\socketio\Handler;
 
 return [
@@ -102,11 +103,26 @@ return [
     'rpc'        => [
         'server' => [
             'enable'   => false,
-            'port'     => 9000,
+            'port'     => 8082,
             'services' => [],
         ],
         
         'client' => [],
+    ],
+    
+    // TCP服务器
+    'tcp'        => [
+        'server'     => [
+            'enable' => true,
+            'port'   => 8081,
+        ],
+        
+        // 排除网关IP，这些IP连接TCP，不会触发 onConnect 和 onClose 事件
+        // 主要为了过滤网关 和 客户端的区别
+        'exclude_ip' => ['127.0.0.1'],
+        
+        // 处理器，必须集成 \BusyPHP\swoole\contract\tcp\TcpHandleInterface 接口
+        'handler'    => TcpHandle::class
     ],
     
     // 热更新

@@ -16,7 +16,7 @@ use BusyPHP\swoole\concerns\InteractsWithServer;
 use BusyPHP\swoole\concerns\InteractsWithSwooleTable;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
-use BusyPHP\swoole\contract\rpc\ParserInterface;
+use BusyPHP\swoole\contract\rpc\RpcParserInterface;
 use BusyPHP\swoole\rpc\server\Channel;
 use BusyPHP\swoole\rpc\server\Dispatcher;
 use Throwable;
@@ -122,10 +122,10 @@ class Manager
     
     protected function bindRpcParser()
     {
-        $parserClass = $this->getConfig('rpc.server.parser', JsonParser::class);
+        $parserClass = $this->getConfig('rpc.server.parser', JsonRpcParser::class);
         
-        $this->app->bind(ParserInterface::class, $parserClass);
-        $this->app->make(ParserInterface::class);
+        $this->app->bind(RpcParserInterface::class, $parserClass);
+        $this->app->make(RpcParserInterface::class);
     }
     
     

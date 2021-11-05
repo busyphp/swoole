@@ -3,10 +3,10 @@
 namespace BusyPHP\swoole\rpc;
 
 use Exception;
-use BusyPHP\swoole\contract\rpc\ParserInterface;
+use BusyPHP\swoole\contract\rpc\RpcParserInterface;
 use BusyPHP\swoole\rpc\server\Dispatcher;
 
-class JsonParser implements ParserInterface
+class JsonRpcParser implements RpcParserInterface
 {
     /**
      * Json-rpc version

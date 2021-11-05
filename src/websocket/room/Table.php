@@ -4,9 +4,9 @@ namespace BusyPHP\swoole\websocket\room;
 
 use InvalidArgumentException;
 use Swoole\Table as SwooleTable;
-use BusyPHP\swoole\contract\websocket\RoomInterface;
+use BusyPHP\swoole\contract\websocket\WebsocketRoomInterface;
 
-class Table implements RoomInterface
+class Table implements WebsocketRoomInterface
 {
     /**
      * @var array
@@ -43,9 +43,9 @@ class Table implements RoomInterface
     /**
      * Do some init stuffs before workers started.
      *
-     * @return RoomInterface
+     * @return WebsocketRoomInterface
      */
-    public function prepare() : RoomInterface
+    public function prepare() : WebsocketRoomInterface
     {
         $this->initRoomsTable();
         $this->initFdsTable();
@@ -119,7 +119,7 @@ class Table implements RoomInterface
      */
     public function getClients(string $room)
     {
-        return $this->getValue($room, RoomInterface::ROOMS_KEY) ?? [];
+        return $this->getValue($room, WebsocketRoomInterface::ROOMS_KEY) ?? [];
     }
     
     
@@ -132,7 +132,7 @@ class Table implements RoomInterface
      */
     public function getRooms(int $fd)
     {
-        return $this->getValue($fd, RoomInterface::DESCRIPTORS_KEY) ?? [];
+        return $this->getValue($fd, WebsocketRoomInterface::DESCRIPTORS_KEY) ?? [];
     }
     
     
@@ -144,7 +144,7 @@ class Table implements RoomInterface
      */
     protected function setClients(string $room, array $fds)
     {
-        return $this->setValue($room, $fds, RoomInterface::ROOMS_KEY);
+        return $this->setValue($room, $fds, WebsocketRoomInterface::ROOMS_KEY);
     }
     
     
@@ -156,7 +156,7 @@ class Table implements RoomInterface
      */
     protected function setRooms(int $fd, array $rooms)
     {
-        return $this->setValue($fd, $rooms, RoomInterface::DESCRIPTORS_KEY);
+        return $this->setValue($fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
     }
     
     

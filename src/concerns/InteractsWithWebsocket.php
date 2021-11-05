@@ -8,7 +8,7 @@ use Swoole\Websocket\Frame;
 use Swoole\Websocket\Server;
 use think\Container;
 use think\helper\Str;
-use BusyPHP\swoole\contract\websocket\RoomInterface;
+use BusyPHP\swoole\contract\websocket\WebsocketRoomInterface;
 use BusyPHP\swoole\Middleware;
 use BusyPHP\swoole\Websocket;
 use BusyPHP\swoole\websocket\Room;
@@ -29,7 +29,7 @@ trait InteractsWithWebsocket
     protected $isWebsocketServer = false;
     
     /**
-     * @var RoomInterface
+     * @var WebsocketRoomInterface
      */
     protected $websocketRoom;
     

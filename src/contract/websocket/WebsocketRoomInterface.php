@@ -2,7 +2,13 @@
 
 namespace BusyPHP\swoole\contract\websocket;
 
-interface RoomInterface
+/**
+ * Websocket房间接口类
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/11/5 上午10:44 WebsocketRoomInterface.php $
+ */
+interface WebsocketRoomInterface
 {
     /**
      * Rooms key
@@ -22,9 +28,9 @@ interface RoomInterface
     /**
      * Do some init stuffs before workers started.
      *
-     * @return RoomInterface
+     * @return WebsocketRoomInterface
      */
-    public function prepare() : RoomInterface;
+    public function prepare() : WebsocketRoomInterface;
     
     
     /**

@@ -10,7 +10,7 @@ use BusyPHP\swoole\pool\Client;
 use BusyPHP\swoole\rpc\client\Connector;
 use BusyPHP\swoole\rpc\client\Gateway;
 use BusyPHP\swoole\rpc\client\Proxy;
-use BusyPHP\swoole\rpc\JsonParser;
+use BusyPHP\swoole\rpc\JsonRpcParser;
 use Throwable;
 
 /**
@@ -42,7 +42,7 @@ trait InteractsWithRpcClient
             //绑定rpc接口
             try {
                 foreach ($rpcServices as $name => $abstracts) {
-                    $parserClass = $this->getConfig("rpc.client.{$name}.parser", JsonParser::class);
+                    $parserClass = $this->getConfig("rpc.client.{$name}.parser", JsonRpcParser::class);
                     $parser      = $this->getApplication()->make($parserClass);
                     $gateway     = new Gateway($this->createRpcConnector($name), $parser);
                     $middleware  = $this->getConfig("rpc.client.{$name}.middleware", []);

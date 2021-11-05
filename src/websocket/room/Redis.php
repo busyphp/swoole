@@ -7,14 +7,14 @@ use Redis as PHPRedis;
 use Smf\ConnectionPool\ConnectionPool;
 use Smf\ConnectionPool\Connectors\PhpRedisConnector;
 use think\helper\Arr;
-use BusyPHP\swoole\contract\websocket\RoomInterface;
+use BusyPHP\swoole\contract\websocket\WebsocketRoomInterface;
 use BusyPHP\swoole\Manager;
 use BusyPHP\swoole\Pool;
 
 /**
  * Class RedisRoom
  */
-class Redis implements RoomInterface
+class Redis implements WebsocketRoomInterface
 {
     /**
      * @var array
@@ -51,9 +51,9 @@ class Redis implements RoomInterface
     
     
     /**
-     * @return RoomInterface
+     * @return WebsocketRoomInterface
      */
-    public function prepare() : RoomInterface
+    public function prepare() : WebsocketRoomInterface
     {
         $this->initData();
         $this->prepareRedis();
@@ -96,10 +96,10 @@ class Redis implements RoomInterface
     {
         $rooms = is_array($rooms) ? $rooms : [$rooms];
         
-        $this->addValue($fd, $rooms, RoomInterface::DESCRIPTORS_KEY);
+        $this->addValue($fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
         
         foreach ($rooms as $room) {
-            $this->addValue($room, [$fd], RoomInterface::ROOMS_KEY);
+            $this->addValue($room, [$fd], WebsocketRoomInterface::ROOMS_KEY);
         }
     }
     
@@ -115,10 +115,10 @@ class Redis implements RoomInterface
         $rooms = is_array($rooms) ? $rooms : [$rooms];
         $rooms = count($rooms) ? $rooms : $this->getRooms($fd);
         
-        $this->removeValue($fd, $rooms, RoomInterface::DESCRIPTORS_KEY);
+        $this->removeValue($fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
         
         foreach ($rooms as $room) {
-            $this->removeValue($room, [$fd], RoomInterface::ROOMS_KEY);
+            $this->removeValue($room, [$fd], WebsocketRoomInterface::ROOMS_KEY);
         }
     }
     
@@ -197,7 +197,7 @@ class Redis implements RoomInterface
      */
     public function getClients(string $room)
     {
-        return $this->getValue($room, RoomInterface::ROOMS_KEY) ?? [];
+        return $this->getValue($room, WebsocketRoomInterface::ROOMS_KEY) ?? [];
     }
     
     
@@ -210,7 +210,7 @@ class Redis implements RoomInterface
      */
     public function getRooms(int $fd)
     {
-        return $this->getValue($fd, RoomInterface::DESCRIPTORS_KEY) ?? [];
+        return $this->getValue($fd, WebsocketRoomInterface::DESCRIPTORS_KEY) ?? [];
     }
     
     
@@ -221,7 +221,7 @@ class Redis implements RoomInterface
      */
     protected function checkTable(string $table)
     {
-        if (!in_array($table, [RoomInterface::ROOMS_KEY, RoomInterface::DESCRIPTORS_KEY])) {
+        if (!in_array($table, [WebsocketRoomInterface::ROOMS_KEY, WebsocketRoomInterface::DESCRIPTORS_KEY])) {
             throw new InvalidArgumentException("Invalid table name: `{$table}`.");
         }
     }

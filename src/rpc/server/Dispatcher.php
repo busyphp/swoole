@@ -9,7 +9,7 @@ use ReflectionMethod;
 use ReflectionNamedType;
 use RuntimeException;
 use Swoole\Server;
-use BusyPHP\swoole\contract\rpc\ParserInterface;
+use BusyPHP\swoole\contract\rpc\RpcParserInterface;
 use BusyPHP\swoole\Middleware;
 use BusyPHP\swoole\rpc\Error;
 use BusyPHP\swoole\rpc\File;
@@ -58,7 +58,7 @@ class Dispatcher
     protected $middleware = [];
     
     
-    public function __construct(ParserInterface $parser, Server $server, $services, $middleware = [])
+    public function __construct(RpcParserInterface $parser, Server $server, $services, $middleware = [])
     {
         $this->parser = $parser;
         $this->server = $server;

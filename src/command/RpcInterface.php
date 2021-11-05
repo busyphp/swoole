@@ -8,9 +8,9 @@ use Nette\PhpGenerator\Helpers;
 use Nette\PhpGenerator\PhpFile;
 use think\console\Command;
 use think\helper\Arr;
-use BusyPHP\swoole\contract\rpc\ParserInterface;
+use BusyPHP\swoole\contract\rpc\RpcParserInterface;
 use BusyPHP\swoole\rpc\client\Gateway;
-use BusyPHP\swoole\rpc\JsonParser;
+use BusyPHP\swoole\rpc\JsonRpcParser;
 use function Swoole\Coroutine\run;
 
 class RpcInterface extends Command
@@ -32,8 +32,8 @@ class RpcInterface extends Command
             $clients = $this->app->config->get('swoole.rpc.client', []);
             
             foreach ($clients as $name => $config) {
-                $parserClass = Arr::get($config, 'parser', JsonParser::class);
-                /** @var ParserInterface $parser */
+                $parserClass = Arr::get($config, 'parser', JsonRpcParser::class);
+                /** @var RpcParserInterface $parser */
                 $parser = new $parserClass;
                 
                 $gateway = new Gateway($config, $parser);

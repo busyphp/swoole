@@ -4,7 +4,7 @@ namespace BusyPHP\swoole\contract\rpc;
 
 use BusyPHP\swoole\rpc\Protocol;
 
-interface ParserInterface
+interface RpcParserInterface
 {
     const EOF = "\r\n\r\n";
     

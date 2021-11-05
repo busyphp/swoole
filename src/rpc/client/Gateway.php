@@ -7,7 +7,7 @@ use Swoole\Coroutine\Client;
 use think\File;
 use think\helper\Arr;
 use BusyPHP\swoole\concerns\InteractsWithRpcConnector;
-use BusyPHP\swoole\contract\rpc\ParserInterface;
+use BusyPHP\swoole\contract\rpc\RpcParserInterface;
 use BusyPHP\swoole\exception\RpcClientException;
 use BusyPHP\swoole\exception\RpcResponseException;
 use BusyPHP\swoole\rpc\Error;
@@ -22,16 +22,16 @@ class Gateway
     /** @var Connector */
     protected $connector;
     
-    /** @var ParserInterface */
+    /** @var RpcParserInterface */
     protected $parser;
     
     
     /**
      * Gateway constructor.
-     * @param Connector|array $connector
-     * @param ParserInterface $parser
+     * @param Connector|array    $connector
+     * @param RpcParserInterface $parser
      */
-    public function __construct($connector, ParserInterface $parser)
+    public function __construct($connector, RpcParserInterface $parser)
     {
         if (is_array($connector)) {
             $connector = $this->createDefaultConnector($connector);

@@ -10,6 +10,7 @@ use BusyPHP\swoole\concerns\InteractsWithRpcServer;
 use BusyPHP\swoole\concerns\InteractsWithRpcClient;
 use BusyPHP\swoole\concerns\InteractsWithServer;
 use BusyPHP\swoole\concerns\InteractsWithSwooleTable;
+use BusyPHP\swoole\concerns\InteractsWithTcp;
 use BusyPHP\swoole\concerns\InteractsWithWebsocket;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
@@ -23,7 +24,18 @@ use BusyPHP\swoole\concerns\WithContainer;
  */
 class Manager
 {
-    use InteractsWithCoordinator, InteractsWithServer, InteractsWithSwooleTable, InteractsWithHttp, InteractsWithWebsocket, InteractsWithPools, InteractsWithRpcClient, InteractsWithRpcServer, InteractsWithQueue, WithContainer, WithApplication;
+    use InteractsWithCoordinator;
+    use InteractsWithServer;
+    use InteractsWithSwooleTable;
+    use InteractsWithHttp;
+    use InteractsWithWebsocket;
+    use InteractsWithTcp;
+    use InteractsWithPools;
+    use InteractsWithRpcClient;
+    use InteractsWithRpcServer;
+    use InteractsWithQueue;
+    use WithContainer;
+    use WithApplication;
     
     /**
      * Server events.
@@ -57,6 +69,7 @@ class Manager
         $this->prepareWebsocket();
         $this->setSwooleServerListeners();
         $this->prepareRpcServer();
+        $this->prepareTcpServer();
         $this->prepareQueue();
         $this->prepareRpcClient();
     }

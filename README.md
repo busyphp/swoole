@@ -43,13 +43,6 @@ su -c "php think swoole start|stop|restart" -s /bin/sh www
 
 单进程服务，不会出现数据争抢，适用于小批量数据队列处理
 
-### 启动命令
-
-```shell script
-php think swoole:queue
-
-在 www 用户下执行
-su -c "php think swoole:queue" -s /bin/sh www
 ```
 
 ### 队列配置

@@ -7,7 +7,6 @@ use BusyPHP\swoole\concerns\InteractsWithCoordinator;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
 use BusyPHP\swoole\contract\tcp\TcpHandlerInterface;
-use BusyPHP\swoole\tcp\client\TcpGateway;
 use BusyPHP\swoole\tcp\handler\TcpHandler;
 use Swoole\Server;
 use Swoole\Server\Port;
@@ -85,13 +84,7 @@ class Manager
         
         $args = func_get_args();
         $this->runInSandbox(function() use ($server, $fd, $reactorId, $args) {
-            // 过滤客户端
-            if ($this->checkFilter($server, $fd, $reactorId)) {
-                return;
-            }
-            
-            
-            if ($this->getHandle()->onConnect($server, $fd, $reactorId)) {
+            if (false === $this->getHandle()->onConnect($server, $fd, $reactorId)) {
                 return;
             }
             
@@ -103,48 +96,15 @@ class Manager
     /**
      * 接收到数据
      * @param Server $server
-     * @param        $fd
-     * @param        $reactorId
-     * @param        $data
+     * @param int    $fd
+     * @param int    $reactorId
+     * @param mixed  $data
      */
-    public function onReceive(Server $server, $fd, $reactorId, $data)
+    public function onReceive(Server $server, int $fd, int $reactorId, $data)
     {
         $args = func_get_args();
         $this->runInSandbox(function() use ($server, $fd, $reactorId, $data, $args) {
-            // 网关入口
-            if (0 === strpos($data, TcpGateway::$prefix)) {
-                $data    = substr($data, strlen(TcpGateway::$prefix));
-                $data    = explode(',', $data);
-                $time    = intval($data[0] ?? 0);
-                $sign    = $data[1] ?? '';
-                $content = $data[2] ?? '';
-                if (!TcpGateway::init()->verify($sign, $content, $time)) {
-                    $server->send($fd, 'Signature verification error');
-                    
-                    return;
-                }
-                $content  = base64_decode($content);
-                $content  = json_decode((string) $content, true) ?: [];
-                $clientId = $content['client_id'] ?? '';
-                $sendData = (string) ($content['data'] ?? '');
-                if (!$clientId) {
-                    $server->send($fd, 'Data exception: client_id');
-                    
-                    return;
-                }
-                
-                if ($server->exists($clientId)) {
-                    $server->send($clientId, $sendData);
-                    $server->send($fd, 'success');
-                } else {
-                    $server->send($fd, 'Client does not exist: ' . $clientId);
-                }
-                
-                return;
-            }
-            
-            
-            if ($this->getHandle()->onReceive($server, $fd, $reactorId, $data)) {
+            if (false === $this->getHandle()->onReceive($server, $fd, $reactorId, $data)) {
                 return;
             }
             
@@ -163,31 +123,11 @@ class Manager
     {
         $args = func_get_args();
         $this->runInSandbox(function() use ($server, $fd, $reactorId, $args) {
-            // 过滤客户端
-            if ($this->checkFilter($server, $fd, $reactorId)) {
-                return;
-            }
-            
-            if ($this->getHandle()->onClose($server, $fd, $reactorId)) {
+            if (false === $this->getHandle()->onClose($server, $fd, $reactorId)) {
                 return;
             }
             
             $this->triggerEvent('tcp.close', $args);
         }, $fd);
-    }
-    
-    
-    /**
-     * 检测是否要过滤的客户端
-     * @param Server $server
-     * @param int    $fd
-     * @param int    $reactorId
-     * @return bool
-     */
-    public function checkFilter(Server $server, int $fd, int $reactorId) : bool
-    {
-        $clientInfo = $server->getClientInfo($fd, $reactorId);
-        
-        return in_array(trim((string) $clientInfo['remote_ip'] ?? ''), $this->excludeIp);
     }
 }

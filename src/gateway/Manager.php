@@ -78,7 +78,7 @@ class Manager
     public function onReceive(Server $server, int $fd, int $reactorId, $data)
     {
         $this->runInSandbox(function() use ($server, $fd, $reactorId, $data) {
-            $data   = (array) (@json_decode($data) ?: []);
+            $data   = (array) (@json_decode($data, true) ?: []);
             $secret = $data['secret'] ?? '';
             $class  = $data['class'] ?? '';
             $method = $data['method'] ?? '';
@@ -110,7 +110,7 @@ class Manager
                     throw new MethodNotFoundException($object, $method);
                 }
                 $object->setMust(true);
-                $object->$method(...$args);
+                Container::getInstance()->invokeMethod([$object, $method], $args);
                 $server->send($fd, 'success');
             } catch (Exception $e) {
                 $server->send($fd, 'Gateway error, ' . $e->getMessage());

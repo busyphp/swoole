@@ -71,6 +71,7 @@ class Gateway
      * @param string $class 发送类
      * @param string $method 类方法
      * @param array  $args 方法参数
+     * @return mixed
      */
     public function send(string $class, string $method, array $args = [])
     {
@@ -85,12 +86,16 @@ class Gateway
             throw new RuntimeException("连接失败, host: {$this->host}, port: {$this->port}");
         }
         $client->send($content);
-        $res = $client->recv();
+        $result = $client->recv();
         $client->close();
         
-        if ($res !== 'success') {
-            throw new RuntimeException($res);
+        $result           = json_decode($result, true) ?: [];
+        $result['status'] = $result['status'] ?? false;
+        if (!$result['status']) {
+            throw new RuntimeException($result['message'] ?? '未知错误');
         }
+        
+        return $result['result'];
     }
     
     

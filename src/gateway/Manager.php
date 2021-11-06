@@ -110,10 +110,10 @@ class Manager
                     throw new MethodNotFoundException($object, $method);
                 }
                 $object->setMust(true);
-                Container::getInstance()->invokeMethod([$object, $method], $args);
-                $server->send($fd, 'success');
+                $result = Container::getInstance()->invokeMethod([$object, $method], $args);
+                $server->send($fd, json_encode(['status' => true, 'result' => $result]));
             } catch (Exception $e) {
-                $server->send($fd, 'Gateway error, ' . $e->getMessage());
+                $server->send($fd, json_encode(['status' => false, 'message' => $e->getMessage()]));
             }
         }, $fd, true);
     }

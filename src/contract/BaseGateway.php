@@ -86,9 +86,10 @@ abstract class BaseGateway
      * 获取网关并发送数据
      * @param string $method
      * @param array  $args
+     * @return mixed
      */
     protected function gateway(string $method, array $args)
     {
-        Gateway::init()->send(static::class, $method, $args);
+        return Gateway::init()->send(static::class, $method, $args);
     }
 }

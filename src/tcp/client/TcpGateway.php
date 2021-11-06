@@ -5,7 +5,7 @@ namespace BusyPHP\swoole\tcp\client;
 use BusyPHP\App;
 use BusyPHP\exception\VerifyException;
 use RuntimeException;
-use swoole_client;
+use Swoole\Client;
 use think\Config;
 use think\Container;
 
@@ -90,33 +90,13 @@ class TcpGateway
         $time    = time();
         $sign    = self::sign($content, $time);
         $content = self::$prefix . "{$time},{$sign},{$content}";
-        
-        // 运行在Swoole下
-        if ($this->app instanceof \BusyPHP\swoole\App) {
-            $client = new swoole_client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_SYNC);
-            if (!$client->connect($this->host, $this->port)) {
-                throw new RuntimeException("连接失败, host: {$this->host}, port: {$this->port}");
-            }
-            $client->send($content);
-            $res = $client->recv();
-            $client->close();
-        } else {
-            if (!function_exists('socket_create')) {
-                throw new RuntimeException('没有安装 sockets 扩展');
-            }
-            
-            $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-            if (!socket_connect($socket, $this->host, $this->port)) {
-                throw new RuntimeException("连接失败, host: {$this->host}, port: {$this->port}");
-            }
-            
-            if (!socket_write($socket, $content, strlen($content))) {
-                throw new RuntimeException('写入数据失败');
-            }
-            
-            $res = socket_read($socket, 8190);
-            socket_close($socket);
+        $client  = new Client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_SYNC);
+        if (!$client->connect($this->host, $this->port)) {
+            throw new RuntimeException("连接失败, host: {$this->host}, port: {$this->port}");
         }
+        $client->send($content);
+        $res = $client->recv();
+        $client->close();
         
         if ($res !== 'success') {
             throw new RuntimeException($res);

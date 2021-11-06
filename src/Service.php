@@ -2,12 +2,15 @@
 
 namespace BusyPHP\swoole;
 
+use BusyPHP\Request;
 use BusyPHP\Service as BaseService;
 use BusyPHP\swoole\app\controller\IndexController;
 use BusyPHP\swoole\command\Queue;
 use BusyPHP\swoole\command\Rpc;
 use BusyPHP\swoole\command\RpcInterface;
 use BusyPHP\swoole\command\Server as ServerCommand;
+use Closure;
+use think\Response;
 use think\Route;
 
 /**
@@ -31,6 +34,34 @@ class Service extends \think\Service
                 ]);
             }
         });
+        
+        // 不公开服务
+        if (!$this->app->config->get('swoole.server.public', false)) {
+            $this->app->middleware->add(function(Request $request, Closure $next) {
+                if ($this->app instanceof App) {
+                    $mode = [];
+                    if ($this->app->config->get('swoole.websocket.enable', false)) {
+                        $mode[] = 'Websocket';
+                    } else {
+                        $mode[] = 'Http';
+                    }
+                    if ($this->app->config->get('swoole.rpc.server.enable', false)) {
+                        $mode[] = 'Rpc';
+                    }
+                    if ($this->app->config->get('swoole.tcp.server.enable', false)) {
+                        $mode[] = 'Tcp';
+                    }
+                    
+                    $message = 'This is [ ';
+                    $message .= implode(', ', $mode);
+                    $message .= ' ] services <hr />' . date('Y-m-d H:i:s');
+                    
+                    return Response::create("<center>{$message}</center>", 'html', 200);
+                }
+                
+                return $next($request);
+            });
+        }
         
         $this->commands(ServerCommand::class, RpcInterface::class, Rpc::class, Queue::class);
     }

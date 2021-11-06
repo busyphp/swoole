@@ -6,6 +6,9 @@ use BusyPHP\swoole\websocket\socketio\WebsocketHandler;
 return [
     // HTTP服务配置
     'server'     => [
+        // 是否公开服务
+        'public'    => false,
+        
         // 监听地址
         'host'      => env('SWOOLE_HOST', '127.0.0.1'),
         

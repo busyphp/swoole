@@ -27,7 +27,7 @@ class TcpGateway
      * 签名密钥
      * @var string
      */
-    protected static $secret = 'sNUn6opBU9P8RdXe9mnH73v8';
+    protected $secret;
     
     /**
      * @var App
@@ -62,6 +62,7 @@ class TcpGateway
         $this->config = $this->app->config;
         $this->host   = $this->config->get('swoole.server.host', '') ?: '127.0.0.1';
         $this->port   = $this->config->get('swoole.tcp.server.port', '') ?: 8081;
+        $this->secret = $this->config->get('swoole.gateway.secret', '') ?: 'sNUn6opBU9P8RdXe9mnH73v8';
     }
     
     
@@ -110,9 +111,9 @@ class TcpGateway
      * @param int    $time
      * @return string
      */
-    public static function sign(string $str, int $time) : string
+    public function sign(string $str, int $time) : string
     {
-        $temp = [$str, $time, self::$secret];
+        $temp = [$str, $time, $this->secret];
         
         return md5(implode(',', $temp));
     }
@@ -125,7 +126,7 @@ class TcpGateway
      * @param int    $time
      * @return bool
      */
-    public static function verify(string $sign, string $str, int $time) : bool
+    public function verify(string $sign, string $str, int $time) : bool
     {
         return $sign === self::sign($str, $time);
     }

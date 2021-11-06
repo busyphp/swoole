@@ -112,17 +112,25 @@ return [
     
     // TCP服务器
     'tcp'        => [
-        'server'     => [
+        'server'  => [
             'enable' => true,
             'port'   => 8081,
         ],
         
-        // 排除网关IP，这些IP连接TCP，不会触发 onConnect 和 onClose 事件
-        // 主要为了过滤网关 和 客户端的区别
-        'exclude_ip' => ['127.0.0.1'],
+        // 网关
+        'gateway' => [
+            // 通信密钥，安全起见，建议设置为32个字符串
+            'secret'     => '',
+            
+            // 排除网关IP，这些IP连接TCP，不会触发 onConnect 和 onClose 事件
+            // 主要为了过滤网关 和 客户端的区别
+            'exclude_ip' => [
+                '127.0.0.1'
+            ]
+        ],
         
         // 处理器，必须集成 \BusyPHP\swoole\contract\tcp\TcpHandleInterface 接口
-        'handler'    => TcpHandler::class
+        'handler' => TcpHandler::class
     ],
     
     // 热更新

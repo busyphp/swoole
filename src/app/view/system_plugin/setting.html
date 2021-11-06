@@ -1,7 +1,7 @@
 <extend name="@admin:layout"/>
 <block name="content">
     <template id="swooleManagerApp">
-        <div class="panel panel-default no-radius no-margin">
+        <div class="panel panel-default no-radius no-margin" id="swooleManagerModal">
             <div class="panel-heading">
                 当前运行状态
                 <div class="pull-right">
@@ -126,6 +126,7 @@
                         errorMessage : '',
                         info         : {},
                         timer        : null,
+                        resizeTimer: null,
                         request      : null,
                         first        : true,
                     },
@@ -142,7 +143,6 @@
                             }
 
                             me.first   = false;
-                            me.error   = false;
                             me.loading = true;
                             me.request = busyAdmin
                                 .request('{:url("plugins_swoole/info")}')
@@ -169,19 +169,29 @@
                                     return false;
                                 })
                                 .exec();
-                        }
-                    },
+                        },
 
-                    resize : function () {
-                        setTimeout(function () {
+                        resize : function () {
+                            clearTimeout(this.resizeTimer);
+                            
                             busyAdmin.app.triggerResize();
-                        }, 500);
+                            this.resizeTimer = setTimeout(function () {
+                                busyAdmin.app.triggerResize();
+                            }, 300);
+                        }
                     }
                 });
 
                 busyAdmin.data.reloadSuccess = function () {
                     app.getInfo();
                 };
+
+                $(document).on(busyAdmin.e.modalHide, function (e, modal) {
+                    if (modal.$dialog.find('#swooleManagerModal').length > 0) {
+                        clearTimeout(app.timer);
+                        clearTimeout(app.resizeTimer);
+                    }
+                });
             });
         });
     </script>

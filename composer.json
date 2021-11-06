@@ -9,7 +9,7 @@
 			"email" : "busy.life@qq.com"
 		}
 	],
-	"license"     : "Apache-2.0",
+	"license"     : "CC-BY-NC-4.0",
 	"require"     : {
 		"ext-json"                     : "*",
 		"ext-swoole"                   : ">=4.4.8",

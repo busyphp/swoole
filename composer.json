@@ -3,6 +3,9 @@
 	"type"        : "library",
 	"description" : "支持异步数据处理，如批量发送邮件、短信等。可用于创建Http服务器，Websocket服务器、Tcp服务器、Rpc服务器等脱离Apache、Nginx等服务器独立运行，独立运行环境下支持Swoole携程开发",
 	"homepage"    : "http://www.harter.cn/?form=BusyPHP&plugin=busyphp/swoole",
+	"keywords" : [
+		"Swoole", "队列", "Websocket服务", "TCP服务", "任务处理"
+	],
 	"authors"     : [
 		{
 			"name"  : "busy^life",

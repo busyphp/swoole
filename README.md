@@ -43,8 +43,6 @@ su -c "php think swoole start|stop|restart" -s /bin/sh www
 
 单进程服务，不会出现数据争抢，适用于小批量数据队列处理
 
-```
-
 ### 队列配置
 
 #### 配置 `config/queue.php`
@@ -232,5 +230,3 @@ class Job1
 // 其他的需要些完整的类名，比如上面的例子二，需要写完整的类名app\lib\job\Job2
 // 如果一个任务类里有多个小任务的话，如上面的例子二，需要用@+方法名app\lib\job\Job2@task1、app\lib\job\Job2@task2
 ```
-
-> 可配合`supervisor`使用，保证进程常驻

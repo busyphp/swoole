@@ -2,45 +2,25 @@
 
 namespace BusyPHP\swoole\websocket\socketio;
 
-use BusyPHP\App;
 use BusyPHP\Request;
 use Exception;
-use Swoole\Server;
 use Swoole\Timer;
 use Swoole\Websocket\Frame;
-use think\Config;
-use think\Event;
 use BusyPHP\swoole\Websocket;
-use BusyPHP\swoole\websocket\Room;
 
-class Handler extends Websocket
+/**
+ * Websocket默认事件处理器
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/11/6 下午7:03 WebsocketHandler.php $
+ */
+class WebsocketHandler extends Websocket
 {
-    /** @var Config */
-    protected $config;
-    
     protected $eio;
-    
-    protected $pingTimeoutTimer  = null;
-    
-    protected $pingIntervalTimer = null;
-    
-    protected $pingInterval;
-    
-    protected $pingTimeout;
-    
-    
-    public function __construct(App $app, Server $server, Room $room, Event $event, Config $config)
-    {
-        $this->config       = $config;
-        $this->pingInterval = $this->config->get('swoole.websocket.ping_interval', 25000);
-        $this->pingTimeout  = $this->config->get('swoole.websocket.ping_timeout', 60000);
-        parent::__construct($app, $server, $room, $event);
-    }
     
     
     /**
-     * "onOpen" listener.
-     *
+     * 已连接事件
      * @param int     $fd
      * @param Request $request
      */
@@ -57,7 +37,7 @@ class Handler extends Websocket
         
         $this->push(EnginePacket::open($payload));
         
-        $this->event->trigger('swoole.websocket.Open', $request);
+        $this->event->trigger('swoole.websocket.open', $request);
         
         if ($this->eio < 4) {
             $this->resetPingTimeout($this->pingInterval + $this->pingTimeout);
@@ -69,15 +49,14 @@ class Handler extends Websocket
     
     
     /**
-     * "onMessage" listener.
-     *
+     * 收到消息事件
      * @param Frame $frame
      */
     public function onMessage(Frame $frame) : void
     {
         $enginePacket = EnginePacket::fromString($frame->data);
         
-        $this->event->trigger('swoole.websocket.Message', $enginePacket);
+        $this->event->trigger('swoole.websocket.message', $enginePacket);
         
         $this->resetPingTimeout($this->pingInterval + $this->pingTimeout);
         
@@ -91,7 +70,7 @@ class Handler extends Websocket
                     case Packet::EVENT:
                         $type   = array_shift($packet->data);
                         $data   = $packet->data;
-                        $result = $this->event->trigger('swoole.websocket.Event', ['type' => $type, 'data' => $data]);
+                        $result = $this->event->trigger('swoole.websocket.event', ['type' => $type, 'data' => $data]);
                         
                         if ($packet->id !== null) {
                             $responsePacket = Packet::create(Packet::ACK, [
@@ -104,7 +83,7 @@ class Handler extends Websocket
                         }
                     break;
                     case Packet::DISCONNECT:
-                        $this->event->trigger('swoole.websocket.Disconnect');
+                        $this->event->trigger('swoole.websocket.disconnect');
                         $this->close();
                     break;
                     default:
@@ -126,8 +105,7 @@ class Handler extends Websocket
     
     
     /**
-     * "onClose" listener.
-     *
+     * 连接已关闭事件
      * @param int $fd
      * @param int $reactorId
      */
@@ -135,14 +113,14 @@ class Handler extends Websocket
     {
         Timer::clear($this->pingTimeoutTimer);
         Timer::clear($this->pingIntervalTimer);
-        $this->event->trigger('swoole.websocket.Close', $reactorId);
+        $this->event->trigger('swoole.websocket.close', $reactorId);
     }
     
     
     protected function onConnect($data = null)
     {
         try {
-            $this->event->trigger('swoole.websocket.Connect', $data);
+            $this->event->trigger('swoole.websocket.connect', $data);
             $packet = Packet::create(Packet::CONNECT);
             if ($this->eio >= 4) {
                 $packet->data = ['sid' => base64_encode(uniqid())];
@@ -157,37 +135,33 @@ class Handler extends Websocket
     }
     
     
-    protected function resetPingTimeout($timeout)
-    {
-        Timer::clear($this->pingTimeoutTimer);
-        $this->pingTimeoutTimer = Timer::after($timeout, function() {
-            $this->close();
-        });
-    }
-    
-    
-    protected function schedulePing()
-    {
-        Timer::clear($this->pingIntervalTimer);
-        $this->pingIntervalTimer = Timer::after($this->pingInterval, function() {
-            $this->push(EnginePacket::ping());
-            $this->resetPingTimeout($this->pingTimeout);
-        });
-    }
-    
-    
+    /**
+     * 生成数据
+     * @param $packet
+     * @return string
+     */
     protected function encode($packet)
     {
         return Parser::encode($packet);
     }
     
     
+    /**
+     * 解析数据
+     * @param string $payload
+     * @return Packet
+     */
     protected function decode($payload)
     {
         return Parser::decode($payload);
     }
     
     
+    /**
+     * 推送数据
+     * @param mixed $data
+     * @return bool
+     */
     public function push($data) : bool
     {
         if ($data instanceof Packet) {
@@ -201,6 +175,12 @@ class Handler extends Websocket
     }
     
     
+    /**
+     * 推送带有事件名的数据
+     * @param string $event
+     * @param mixed  ...$data
+     * @return bool
+     */
     public function emit(string $event, ...$data) : bool
     {
         $packet = Packet::create(Packet::EVENT, [
@@ -208,5 +188,15 @@ class Handler extends Websocket
         ]);
         
         return $this->push($packet);
+    }
+    
+    
+    /**
+     * ping包内容
+     * @return string
+     */
+    protected function pingData() : string
+    {
+        return EnginePacket::ping();
     }
 }

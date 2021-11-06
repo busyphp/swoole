@@ -1,7 +1,7 @@
 <?php
 
 use BusyPHP\swoole\tcp\handler\TcpHandler;
-use BusyPHP\swoole\websocket\socketio\Handler;
+use BusyPHP\swoole\websocket\socketio\WebsocketHandler;
 
 return [
     // HTTP服务配置
@@ -88,9 +88,11 @@ return [
     // WebSocket配置
     'websocket'  => [
         'enable'        => false,
-        'handler'       => Handler::class,
-        'ping_interval' => 25000,
-        'ping_timeout'  => 60000,
+        
+        // 处理器，必须继承 \BusyPHP\swoole\Websocket 类
+        'handler'       => WebsocketHandler::class,
+        
+        // 客户端关系管理配置
         'room'          => [
             'type'  => 'table',
             'table' => [
@@ -106,8 +108,18 @@ return [
                 'max_wait_time' => 5,
             ],
         ],
+        
+        // 事件监听器
         'listen'        => [],
+        
+        // 事件订阅
         'subscribe'     => [],
+        
+        // ping包间隔毫秒
+        'ping_interval' => 25000,
+        
+        // 客户端多少时间未发送ping包则关闭连接
+        'ping_timeout'  => 60000,
     ],
     
     // PRC服务器
@@ -124,7 +136,7 @@ return [
     // TCP服务器
     'tcp'        => [
         'server'  => [
-            'enable' => true,
+            'enable' => false,
             'port'   => 8081,
         ],
         

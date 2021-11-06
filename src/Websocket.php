@@ -4,6 +4,7 @@ namespace BusyPHP\swoole;
 
 use BusyPHP\Request;
 use Swoole\Server;
+use Swoole\Timer;
 use Swoole\WebSocket\Frame;
 use think\Event;
 use BusyPHP\swoole\websocket\Pusher;
@@ -55,6 +56,30 @@ class Websocket
      */
     protected $event;
     
+    /**
+     * ping包超时计时器
+     * @var int
+     */
+    protected $pingTimeoutTimer = null;
+    
+    /**
+     * ping包发送计时器
+     * @var int
+     */
+    protected $pingIntervalTimer = null;
+    
+    /**
+     * ping包间隔毫秒
+     * @var int
+     */
+    protected $pingInterval;
+    
+    /**
+     * ping包超时毫秒
+     * @var int
+     */
+    protected $pingTimeout;
+    
     
     /**
      * Websocket constructor.
@@ -66,10 +91,12 @@ class Websocket
      */
     public function __construct(\BusyPHP\App $app, Server $server, Room $room, Event $event)
     {
-        $this->app    = $app;
-        $this->server = $server;
-        $this->room   = $room;
-        $this->event  = $event;
+        $this->app          = $app;
+        $this->server       = $server;
+        $this->room         = $room;
+        $this->event        = $event;
+        $this->pingInterval = $this->app->config->get('swoole.websocket.ping_interval', 25000);
+        $this->pingTimeout  = $this->app->config->get('swoole.websocket.ping_timeout', 60000);
     }
     
     
@@ -338,7 +365,7 @@ class Websocket
     
     
     /**
-     * 加密数据
+     * 生成数据
      * @param $packet
      * @return string
      */
@@ -349,7 +376,7 @@ class Websocket
     
     
     /**
-     * 解密数据
+     * 解析数据
      * @param string $payload
      * @return array
      */
@@ -478,5 +505,41 @@ class Websocket
     public function roomName($name) : string
     {
         return "g{$name}";
+    }
+    
+    
+    /**
+     * 重置ping包超时计时
+     * @param $timeout
+     */
+    protected function resetPingTimeout($timeout)
+    {
+        Timer::clear($this->pingTimeoutTimer);
+        $this->pingTimeoutTimer = Timer::after($timeout, function() {
+            $this->close();
+        });
+    }
+    
+    
+    /**
+     * 启动发送ping包
+     */
+    protected function schedulePing()
+    {
+        Timer::clear($this->pingIntervalTimer);
+        $this->pingIntervalTimer = Timer::after($this->pingInterval, function() {
+            $this->push($this->pingData());
+            $this->resetPingTimeout($this->pingTimeout);
+        });
+    }
+    
+    
+    /**
+     * ping包内容
+     * @return string
+     */
+    protected function pingData() : string
+    {
+        return "ping";
     }
 }

@@ -52,7 +52,7 @@ class Gateway
         $this->app    = $app;
         $this->config = $this->app->config;
         $this->host   = $this->config->get('swoole.server.host', '') ?: '127.0.0.1';
-        $this->port   = $this->config->get('swoole.gateway.server.port', '') ?: 8081;
+        $this->port   = $this->config->get('swoole.gateway.server.port', '') ?: 8083;
         $this->secret = $this->config->get('swoole.gateway.secret', '') ?: 'sNUn6opBU9P8RdXe9mnH73v8';
     }
     

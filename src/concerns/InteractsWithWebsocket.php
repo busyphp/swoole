@@ -102,11 +102,11 @@ trait InteractsWithWebsocket
     
     
     /**
-     * @param App            $app
-     * @param \think\Request $request
-     * @return \think\Request
+     * @param App              $app
+     * @param \BusyPHP\Request $request
+     * @return \BusyPHP\Request
      */
-    protected function setRequestThroughMiddleware(App $app, \think\Request $request)
+    protected function setRequestThroughMiddleware(App $app, \BusyPHP\Request $request)
     {
         return Middleware::make($app, $this->getConfig('websocket.middleware', []))
             ->pipeline()

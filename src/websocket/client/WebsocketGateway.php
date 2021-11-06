@@ -13,7 +13,7 @@ use think\Container;
  * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
  * @version $Id: 2021/11/5 下午1:32 WebSocketGateway.php $
  */
-class WebSocketGateway extends BaseGateway
+class WebsocketGateway extends BaseGateway
 {
     /**
      * 发送数据给所有人

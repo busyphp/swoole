@@ -3,6 +3,7 @@
 namespace BusyPHP\swoole;
 
 use BusyPHP\swoole\concerns\InteractsWithCoordinator;
+use BusyPHP\swoole\concerns\InteractsWithGatewayServer;
 use BusyPHP\swoole\concerns\InteractsWithHttp;
 use BusyPHP\swoole\concerns\InteractsWithPools;
 use BusyPHP\swoole\concerns\InteractsWithQueue;
@@ -26,6 +27,7 @@ class Manager
 {
     use InteractsWithCoordinator;
     use InteractsWithServer;
+    use InteractsWithGatewayServer;
     use InteractsWithSwooleTable;
     use InteractsWithHttp;
     use InteractsWithWebsocket;
@@ -66,6 +68,7 @@ class Manager
     {
         $this->prepareTables();
         $this->preparePools();
+        $this->prepareGatewayServer();
         $this->prepareWebsocket();
         $this->setSwooleServerListeners();
         $this->prepareRpcServer();

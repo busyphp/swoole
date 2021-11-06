@@ -3,7 +3,6 @@
 namespace BusyPHP\swoole\gateway;
 
 use BusyPHP\App;
-use BusyPHP\exception\VerifyException;
 use RuntimeException;
 use Swoole\Client;
 use think\Config;

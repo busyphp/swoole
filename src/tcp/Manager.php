@@ -39,7 +39,7 @@ class Manager
     {
         $this->onEvent('workerStart', function(App $app) {
             $handler         = $this->getConfig('tcp.handler', '') ?: TcpHandler::class;
-            $this->excludeIp = $this->getConfig('tcp.exclude_ip', []);
+            $this->excludeIp = $this->getConfig('tcp.gateway.exclude_ip', []);
             
             $this->app = $app;
             $this->app->bind(TcpHandlerInterface::class, $handler);
@@ -118,7 +118,7 @@ class Manager
                 $time    = intval($data[0] ?? 0);
                 $sign    = $data[1] ?? '';
                 $content = $data[2] ?? '';
-                if (!TcpGateway::verify($sign, $content, $time)) {
+                if (!TcpGateway::init()->verify($sign, $content, $time)) {
                     $server->send($fd, 'Signature verification error');
                     
                     return;

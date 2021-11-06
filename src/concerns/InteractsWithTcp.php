@@ -3,6 +3,7 @@
 namespace BusyPHP\swoole\concerns;
 
 use BusyPHP\App;
+use BusyPHP\helper\LogHelper;
 use BusyPHP\swoole\tcp\Manager;
 use Swoole\Server;
 use Swoole\Server\Port;
@@ -31,10 +32,17 @@ trait InteractsWithTcp
         
         $host = $this->getConfig('server.host', '');
         $port = $this->getConfig('tcp.server.port', '');
+        $host = $host ?: '127.0.0.1';
+        $port = $port ?: 8081;
         
         /** @var Port $tcpServer */
-        $tcpServer = $this->getServer()->addlistener($host ?: '127.0.0.1', $port ?: 8081, SWOOLE_SOCK_TCP);
-    
+        $tcpServer = $this->getServer()->addlistener($host, $port, SWOOLE_SOCK_TCP);
+        if (!$tcpServer) {
+            LogHelper::default()->method(__METHOD__)->error("TCP服务器启动失败, host: {$host}, port: {$port}");
+            
+            return;
+        }
+        
         /** @var Manager $tcpManager */
         $tcpManager = $this->container->make(Manager::class);
         $tcpManager->attachToServer($tcpServer);

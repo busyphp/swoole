@@ -17,7 +17,7 @@ interface TcpHandlerInterface
      * @param Server $server
      * @param int    $fd 客户端ID
      * @param int    $reactorId
-     * @return bool|null 返回true阻止 swoole.tcp.connect 事件
+     * @return bool|null 返回false阻止 swoole.tcp.connect 事件
      */
     public function onConnect(Server $server, int $fd, int $reactorId) : ?bool;
     
@@ -28,7 +28,7 @@ interface TcpHandlerInterface
      * @param int    $fd 客户端ID
      * @param int    $reactorId
      * @param string $data
-     * @return bool|null 返回true阻止 swoole.tcp.receive 事件
+     * @return bool|null 返回false阻止 swoole.tcp.receive 事件
      */
     public function onReceive(Server $server, int $fd, int $reactorId, $data) : ?bool;
     
@@ -38,7 +38,7 @@ interface TcpHandlerInterface
      * @param Server $server
      * @param int    $fd 客户端ID
      * @param int    $reactorId
-     * @return bool|null 返回true阻止 swoole.tcp.close 事件
+     * @return bool|null 返回false阻止 swoole.tcp.close 事件
      */
     public function onClose(Server $server, int $fd, int $reactorId) : ?bool;
 }

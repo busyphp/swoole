@@ -74,6 +74,17 @@ return [
         ],
     ],
     
+    // 网关
+    'gateway'    => [
+        'server' => [
+            // 网关端口
+            'port' => 8083,
+        ],
+        
+        // 通信密钥，为了安全建议设置32个字符串
+        'secret' => '',
+    ],
+    
     // WebSocket配置
     'websocket'  => [
         'enable'        => false,
@@ -115,18 +126,6 @@ return [
         'server'  => [
             'enable' => true,
             'port'   => 8081,
-        ],
-        
-        // 网关
-        'gateway' => [
-            // 通信密钥，安全起见，建议设置为32个字符串
-            'secret'     => '',
-            
-            // 排除网关IP，这些IP连接TCP，不会触发 onConnect 和 onClose 事件
-            // 主要为了过滤网关 和 客户端的区别
-            'exclude_ip' => [
-                '127.0.0.1'
-            ]
         ],
         
         // 处理器，必须集成 \BusyPHP\swoole\contract\tcp\TcpHandleInterface 接口

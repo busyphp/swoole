@@ -2,12 +2,12 @@
 
 namespace BusyPHP\swoole\middleware;
 
+use BusyPHP\Request;
 use Closure;
 use Symfony\Component\VarDumper\Caster\ReflectionCaster;
 use Symfony\Component\VarDumper\Cloner\VarCloner;
 use Symfony\Component\VarDumper\Dumper\HtmlDumper;
 use Symfony\Component\VarDumper\VarDumper;
-use think\Request;
 
 class ResetVarDumper
 {

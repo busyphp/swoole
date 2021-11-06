@@ -160,7 +160,7 @@ trait InteractsWithHttp
         }
         
         // 重新实例化请求对象 处理swoole请求数据
-        /** @var \think\Request $request */
+        /** @var \BusyPHP\Request $request */
         $request = $this->app->make('request', [], true);
         
         return $request->withHeader($header)

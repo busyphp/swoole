@@ -30,10 +30,8 @@ trait InteractsWithTcp
             return;
         }
         
-        $host = $this->getConfig('server.host', '');
-        $port = $this->getConfig('tcp.server.port', '');
-        $host = $host ?: '127.0.0.1';
-        $port = $port ?: 8081;
+        $host = $this->getConfig('server.host', '') ?: '127.0.0.1';
+        $port = $this->getConfig('tcp.server.port', '') ?: 8081;
         
         /** @var Port $tcpServer */
         $tcpServer = $this->getServer()->addlistener($host, $port, SWOOLE_SOCK_TCP);

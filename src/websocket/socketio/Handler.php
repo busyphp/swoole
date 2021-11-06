@@ -3,13 +3,13 @@
 namespace BusyPHP\swoole\websocket\socketio;
 
 use BusyPHP\App;
+use BusyPHP\Request;
 use Exception;
 use Swoole\Server;
 use Swoole\Timer;
 use Swoole\Websocket\Frame;
 use think\Config;
 use think\Event;
-use think\Request;
 use BusyPHP\swoole\Websocket;
 use BusyPHP\swoole\websocket\Room;
 
@@ -44,7 +44,7 @@ class Handler extends Websocket
      * @param int     $fd
      * @param Request $request
      */
-    public function onOpen($fd, Request $request)
+    public function onOpen(int $fd, Request $request) : void
     {
         $this->eio = $request->param('EIO');
         
@@ -73,7 +73,7 @@ class Handler extends Websocket
      *
      * @param Frame $frame
      */
-    public function onMessage(Frame $frame)
+    public function onMessage(Frame $frame) : void
     {
         $enginePacket = EnginePacket::fromString($frame->data);
         
@@ -131,7 +131,7 @@ class Handler extends Websocket
      * @param int $fd
      * @param int $reactorId
      */
-    public function onClose($fd, $reactorId)
+    public function onClose(int $fd, $reactorId) : void
     {
         Timer::clear($this->pingTimeoutTimer);
         Timer::clear($this->pingIntervalTimer);
@@ -188,7 +188,7 @@ class Handler extends Websocket
     }
     
     
-    public function push($data)
+    public function push($data) : bool
     {
         if ($data instanceof Packet) {
             $data = EnginePacket::message($this->encode($data));

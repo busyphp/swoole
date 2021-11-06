@@ -3,8 +3,8 @@
 namespace BusyPHP\swoole\websocket\middleware;
 
 use BusyPHP\App;
+use BusyPHP\Request;
 use Closure;
-use think\Request;
 use think\Response;
 use think\Session;
 

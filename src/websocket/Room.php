@@ -12,7 +12,7 @@ use BusyPHP\swoole\websocket\room\Table;
  */
 class Room extends Manager
 {
-    protected $namespace = "\\think\\swoole\\websocket\\room\\";
+    protected $namespace = "\\BusyPHP\\swoole\\websocket\\room\\";
     
     
     protected function resolveConfig(string $name)

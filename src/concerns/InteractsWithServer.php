@@ -3,6 +3,8 @@
 namespace BusyPHP\swoole\concerns;
 
 use BusyPHP\App;
+use BusyPHP\swoole\Job;
+use BusyPHP\swoole\task\Job as TaskJob;
 use Exception;
 use Swoole\Process;
 use Swoole\Runtime;
@@ -11,7 +13,6 @@ use Swoole\Server\Task;
 use think\Event;
 use think\helper\Str;
 use BusyPHP\swoole\FileWatcher;
-use BusyPHP\swoole\Job;
 
 /**
  * Trait InteractsWithServer
@@ -55,7 +56,7 @@ trait InteractsWithServer
     
     
     /**
-     * "onStart" listener.
+     * 服务已启动事件
      */
     public function onStart()
     {
@@ -66,9 +67,7 @@ trait InteractsWithServer
     
     
     /**
-     * The listener of "managerStart" event.
-     *
-     * @return void
+     * Manager进程已启动事件
      */
     public function onManagerStart()
     {
@@ -78,10 +77,8 @@ trait InteractsWithServer
     
     
     /**
-     * "onWorkerStart" listener.
-     *
+     * Worker已启动事件
      * @param \Swoole\Http\Server|mixed $server
-     *
      * @throws Exception
      */
     public function onWorkerStart($server)
@@ -90,9 +87,7 @@ trait InteractsWithServer
             Runtime::enableCoroutine($this->getConfig('coroutine.enable', true), $this->getConfig('coroutine.flags', SWOOLE_HOOK_ALL));
             
             $this->clearCache();
-            
             $this->setProcessName($server->taskworker ? 'task process' : 'worker process');
-            
             $this->prepareApplication();
             $this->bindServer();
             $this->triggerEvent('workerStart', $this->app);
@@ -101,8 +96,7 @@ trait InteractsWithServer
     
     
     /**
-     * Set onTask listener.
-     *
+     * 任务执行事件
      * @param mixed $server
      * @param Task  $task
      */
@@ -111,6 +105,8 @@ trait InteractsWithServer
         $this->runInSandbox(function(Event $event, App $app) use ($task) {
             if ($task->data instanceof Job) {
                 $task->data->run($app);
+            } elseif ($task->data instanceof TaskJob) {
+                $task->data->run($app, $this->getServer(), $task);
             } else {
                 $event->trigger('swoole.task', $task);
             }
@@ -119,7 +115,7 @@ trait InteractsWithServer
     
     
     /**
-     * Set onShutdown listener.
+     * 服务已关闭事件
      */
     public function onShutdown()
     {
@@ -127,6 +123,9 @@ trait InteractsWithServer
     }
     
     
+    /**
+     * 绑定Swoole服务对象
+     */
     protected function bindServer()
     {
         $this->app->bind(Server::class, $this->getServer());
@@ -135,6 +134,7 @@ trait InteractsWithServer
     
     
     /**
+     * 获取Swoole服务对象
      * @return Server
      */
     public function getServer()
@@ -144,7 +144,7 @@ trait InteractsWithServer
     
     
     /**
-     * Set swoole server listeners.
+     * 设置启动监听
      */
     protected function setSwooleServerListeners()
     {
@@ -177,8 +177,7 @@ trait InteractsWithServer
     
     
     /**
-     * Add process to http server
-     *
+     * 添加一个进程到server中
      * @param Process $process
      */
     public function addProcess(Process $process) : void
@@ -203,14 +202,13 @@ trait InteractsWithServer
     
     
     /**
-     * Set process name.
-     *
+     * 设置进程名称
      * @param $process
      */
     protected function setProcessName($process)
     {
         $serverName = 'swoole server';
-        $appName    = $this->container->config->get('app.name', 'ThinkPHP');
+        $appName    = $this->container->config->get('app.name', 'BusyPHP');
         
         $name = sprintf('%s: %s for %s', $serverName, $process, $appName);
         

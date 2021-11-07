@@ -21,7 +21,11 @@ trait WithApplication
      * @var SwooleApp
      */
     protected $app;
-
+    
+    
+    /**
+     * 初始化应用
+     */
     protected function prepareApplication()
     {
         if (!$this->app instanceof SwooleApp) {
@@ -30,7 +34,7 @@ trait WithApplication
             //绑定连接池
             if ($this->getConfig('pool.db.enable', true)) {
                 $this->app->bind('db', Db::class);
-                $this->app->resolving(Db::class, function (Db $db) {
+                $this->app->resolving(Db::class, function(Db $db) {
                     $db->setLog($this->container->log);
                 });
             }
@@ -41,28 +45,35 @@ trait WithApplication
             $this->prepareConcretes();
         }
     }
-
+    
+    
     /**
      * 预加载
      */
     protected function prepareConcretes()
     {
         $defaultConcretes = ['db', 'cache', 'event'];
-
+        
         $concretes = array_merge($defaultConcretes, $this->getConfig('concretes', []));
-
+        
         foreach ($concretes as $concrete) {
             if ($this->app->has($concrete)) {
                 $this->app->make($concrete);
             }
         }
     }
-
+    
+    
+    /**
+     * 获取应用
+     * @return SwooleApp
+     */
     protected function getApplication()
     {
         return $this->app;
     }
-
+    
+    
     /**
      * 获取沙箱
      * @return Sandbox
@@ -71,12 +82,13 @@ trait WithApplication
     {
         return $this->app->make(Sandbox::class);
     }
-
+    
+    
     /**
      * 在沙箱中执行
      * @param Closure $callable
-     * @param null $fd
-     * @param bool $persistent
+     * @param null    $fd
+     * @param bool    $persistent
      */
     protected function runInSandbox(Closure $callable, $fd = null, $persistent = false)
     {
@@ -86,5 +98,4 @@ trait WithApplication
             $this->logServerError($e);
         }
     }
-
 }

@@ -3,7 +3,9 @@
 namespace BusyPHP\swoole;
 
 use Closure;
+use Exception;
 use InvalidArgumentException;
+use ReflectionException;
 use ReflectionObject;
 use RuntimeException;
 use think\Config;
@@ -31,27 +33,38 @@ class Sandbox
     use ModifyProperty;
     
     /**
-     * The app containers in different coroutine environment.
-     *
+     * 容器快照
      * @var SwooleApp[]
      */
     protected $snapshots = [];
     
-    /** @var SwooleApp */
+    /**
+     * @var SwooleApp
+     */
     protected $app;
     
-    /** @var Config */
+    /**
+     * @var Config
+     */
     protected $config;
     
-    /** @var Event */
+    /**
+     * @var Event
+     */
     protected $event;
     
-    /** @var ResetterInterface[] */
+    /**
+     * @var ResetterInterface[]
+     */
     protected $resetters = [];
     
     protected $services  = [];
     
     
+    /**
+     * Sandbox constructor.
+     * @param Container $app
+     */
     public function __construct(Container $app)
     {
         $this->setBaseApp($app);
@@ -59,6 +72,11 @@ class Sandbox
     }
     
     
+    /**
+     * 设置App
+     * @param Container $app
+     * @return $this
+     */
     public function setBaseApp(Container $app)
     {
         $this->app = $app;
@@ -67,12 +85,20 @@ class Sandbox
     }
     
     
+    /**
+     * 获取APP
+     * @return App
+     */
     public function getBaseApp()
     {
         return $this->app;
     }
     
     
+    /**
+     * 初始化
+     * @return $this
+     */
     protected function initialize()
     {
         Container::setInstance(function() {
@@ -90,6 +116,13 @@ class Sandbox
     }
     
     
+    /**
+     * 运行
+     * @param Closure $callable 自定义回调
+     * @param int     $fd 容器标识
+     * @param bool    $persistent 持久化
+     * @throws Throwable
+     */
     public function run(Closure $callable, $fd = null, $persistent = false)
     {
         $this->init($fd);
@@ -104,6 +137,11 @@ class Sandbox
     }
     
     
+    /**
+     * 初始化容器
+     * @param mixed $fd 容器标识
+     * @throws ReflectionException
+     */
     public function init($fd = null)
     {
         if (!is_null($fd)) {
@@ -115,6 +153,11 @@ class Sandbox
     }
     
     
+    /**
+     * 清空
+     * @param bool $snapshot
+     * @throws Exception
+     */
     public function clear($snapshot = true)
     {
         if ($snapshot && $this->getSnapshot()) {
@@ -178,6 +221,10 @@ class Sandbox
     }
     
     
+    /**
+     * @param Container $app
+     * @throws ReflectionException
+     */
     public function setInstance(Container $app)
     {
         $app->instance('app', $app);
@@ -210,7 +257,7 @@ class Sandbox
     
     
     /**
-     * Get config snapshot.
+     * 获取配置
      */
     public function getConfig()
     {
@@ -230,6 +277,9 @@ class Sandbox
     }
     
     
+    /**
+     * 初始化服务
+     */
     protected function setInitialServices()
     {
         $app = $this->getBaseApp();
@@ -246,7 +296,7 @@ class Sandbox
     
     
     /**
-     * Initialize resetters.
+     * 初始化重置器
      */
     protected function setInitialResetters()
     {
@@ -272,8 +322,7 @@ class Sandbox
     
     
     /**
-     * Reset Application.
-     *
+     * 重置应用
      * @param Container $app
      */
     protected function resetApp(Container $app)

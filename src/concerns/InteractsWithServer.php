@@ -3,9 +3,18 @@
 namespace BusyPHP\swoole\concerns;
 
 use BusyPHP\App;
+use BusyPHP\exception\ClassNotFoundException;
+use BusyPHP\exception\ClassNotImplementsException;
+use BusyPHP\helper\ArrayHelper;
+use BusyPHP\swoole\contract\task\TaskWorkerInterface;
 use BusyPHP\swoole\Job;
 use BusyPHP\swoole\task\Job as TaskJob;
+use BusyPHP\swoole\task\parameter\FinishParameter;
+use BusyPHP\swoole\task\parameter\TimerParameter;
+use DomainException;
 use Exception;
+use InvalidArgumentException;
+use RuntimeException;
 use Swoole\Process;
 use Swoole\Runtime;
 use Swoole\Server;
@@ -90,6 +99,7 @@ trait InteractsWithServer
             $this->setProcessName($server->taskworker ? 'task process' : 'worker process');
             $this->prepareApplication();
             $this->bindServer();
+            $this->prepareTask();
             $this->triggerEvent('workerStart', $this->app);
         });
     }
@@ -213,5 +223,142 @@ trait InteractsWithServer
         $name = sprintf('%s: %s for %s', $serverName, $process, $appName);
         
         @cli_set_process_title($name);
+    }
+    
+    
+    /**
+     * 准备任务处理
+     */
+    protected function prepareTask()
+    {
+        if (!$this->getConfig('task.enable', false) || $this->getServer()->taskworker) {
+            return;
+        }
+        
+        $workers = $this->getConfig('task.workers');
+        if (is_callable($workers)) {
+            $workers = call_user_func($workers);
+        }
+        $workers = is_array($workers) ? $workers : [];
+        foreach ($workers as $worker) {
+            if (!$worker) {
+                continue;
+            }
+            
+            $this->startTaskTimer($worker);
+        }
+    }
+    
+    
+    /**
+     * 启动任务定时器
+     * @param string $worker
+     */
+    protected function startTaskTimer(string $worker)
+    {
+        if (!class_exists($worker)) {
+            throw new ClassNotFoundException($worker);
+        }
+        
+        if (!is_subclass_of($worker, TaskWorkerInterface::class)) {
+            throw new ClassNotImplementsException($worker, TaskWorkerInterface::class);
+        }
+        
+        $interval = call_user_func([$worker, 'getTimerIntervalMs']);
+        if ($interval < 0) {
+            throw new RuntimeException('the interval must be greater than 0 milliseconds');
+        }
+        
+        $this->getServer()->tick($interval, function($timeId) use ($worker) {
+            $this->runInSandbox(function() use ($worker, $timeId) {
+                $this->runTask($worker, $timeId);
+            }, "time{$timeId}");
+        });
+    }
+    
+    
+    /**
+     * 执行任务
+     * @param string $worker
+     * @param int    $timeId
+     */
+    protected function runTask(string $worker, int $timeId)
+    {
+        if (!is_subclass_of($worker, TaskWorkerInterface::class)) {
+            throw new ClassNotImplementsException($worker, TaskWorkerInterface::class);
+        }
+        
+        $emptyIdle  = call_user_func([$worker, 'getTaskEmptyIdleStatus']);
+        $maxTasking = call_user_func([$worker, 'getTaskMaxNumber']);
+        $server     = $this->getServer();
+        $stats      = $server->stats();
+        
+        // 没有空闲进程不投递
+        if (!$emptyIdle && intval($stats['task_idle_worker_num'] ?? 0) == 0) {
+            return;
+        }
+        
+        // 排队进程超出设置则不允许投递
+        if ($maxTasking > 0 && intval($stats['tasking_num'] ?? 0) > $maxTasking) {
+            return;
+        }
+        
+        // Worker 进程忙碌中
+        // Swoole 版本 >= v4.5.0RC1 可用
+        if (method_exists($server, 'getWorkerStatus') && $server->getWorkerStatus() === SWOOLE_WORKER_BUSY) {
+            return;
+        }
+        
+        $parameter = new TimerParameter($timeId, $server, $this->container);
+        call_user_func_array([$worker, 'onTimer'], [$parameter]);
+        
+        // 不需要投递到task中
+        if (!$parameter->isDeliver() || empty($parameter->getData())) {
+            return;
+        }
+        
+        // 异步任务
+        if ($parameter->isAsync()) {
+            $server->task(new TaskJob($worker, $parameter->getData()), $parameter->getDstWorkerId(), function(Server $server, int $taskId, $finishData) use ($worker, $parameter) {
+                call_user_func_array([
+                    $worker,
+                    'onFinish'
+                ], [new FinishParameter($this->container, $server, $parameter->getData(), $finishData, $taskId)]);
+            });
+        } else {
+            // 同步并发任务
+            if ($parameter->isMulti()) {
+                $data = $parameter->getData();
+                if (!is_array($data) || ArrayHelper::isAssoc($data)) {
+                    throw new InvalidArgumentException('Deliver data must be an numeric index array');
+                }
+                
+                if (count($data) > 1024) {
+                    throw new DomainException('The maximum concurrent tasks must not exceed 1024');
+                }
+                
+                $tasks = [];
+                foreach ($data as $item) {
+                    $tasks[] = new TaskJob($worker, $item);
+                }
+                
+                $results = $server->taskCo($tasks, $parameter->getTimeout());
+                call_user_func_array([
+                    $worker,
+                    'onFinish'
+                ], [new FinishParameter($this->container, $server, $data, $results)]);
+            }
+            
+            //
+            // 同步任务
+            else {
+                $results = $server->taskwait(new TaskJob($worker, $parameter->getData()), $parameter->getTimeout(), $parameter->getDstWorkerId());
+                
+                call_user_func_array([
+                    $worker,
+                    'onFinish'
+                ], [new FinishParameter($this->container, $server, $parameter->getData(), $results, $parameter->getDstWorkerId())]);
+            }
+        }
     }
 }

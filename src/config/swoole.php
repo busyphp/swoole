@@ -180,6 +180,7 @@ return [
     ],
     
     // 队列
+    // 不会争抢数据，单进程处理
     'queue'      => [
         'enable'  => false,
         'workers' => [
@@ -200,6 +201,15 @@ return [
             
             // 更多队列配置
         ],
+    ],
+    
+    // 任务
+    // 会争抢数据，多进程处理
+    'task'       => [
+        'enable'  => false,
+        'workers' => [
+            // 任务类名，必须集成 \BusyPHP\swoole\contract\task\TaskWorkerInterface 接口
+        ]
     ],
     
     'coroutine' => [

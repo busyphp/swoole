@@ -38,7 +38,25 @@ trait InteractsWithWebsocket
      *
      * @var array
      */
-    protected $wsEvents = ['open', 'message', 'close'];
+    protected $wsEvents = [
+        /**
+         * Websocket已连接
+         * @see InteractsWithWebsocket::onOpen()
+         */
+        'open',
+        
+        /**
+         * 收到Websocket消息
+         * @see InteractsWithWebsocket::onMessage()
+         */
+        'message',
+        
+        /**
+         * Websocket已断开
+         * @see InteractsWithWebsocket::onClose()
+         */
+        'close'
+    ];
     
     
     /**

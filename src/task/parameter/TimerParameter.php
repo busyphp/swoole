@@ -41,7 +41,7 @@ class TimerParameter
      * 指定要给投递给哪个 Task 进程的进程ID
      * @var int
      */
-    private $dstWorkerId = 0;
+    private $dstWorkerId = -1;
     
     /**
      * 是否投递数据

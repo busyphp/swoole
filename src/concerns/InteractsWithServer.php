@@ -270,19 +270,21 @@ trait InteractsWithServer
         }
         
         $this->getServer()->tick($interval, function($timeId) use ($worker) {
-            $this->runInSandbox(function() use ($worker, $timeId) {
-                $this->runTask($worker, $timeId);
-            }, "time{$timeId}");
+            $this->runInSandbox(function(App $app, Server $server) use ($worker, $timeId) {
+                $this->runTask($app, $server, $worker, $timeId);
+            }, "task_time_{$timeId}");
         });
     }
     
     
     /**
      * 执行任务
+     * @param App    $app
+     * @param Server $server
      * @param string $worker
      * @param int    $timeId
      */
-    protected function runTask(string $worker, int $timeId)
+    protected function runTask(App $app, Server $server, string $worker, int $timeId)
     {
         if (!is_subclass_of($worker, TaskWorkerInterface::class)) {
             throw new ClassNotImplementsException($worker, TaskWorkerInterface::class);
@@ -290,7 +292,6 @@ trait InteractsWithServer
         
         $emptyIdle  = call_user_func([$worker, 'getTaskEmptyIdleStatus']);
         $maxTasking = call_user_func([$worker, 'getTaskMaxNumber']);
-        $server     = $this->getServer();
         $stats      = $server->stats();
         
         // 没有空闲进程不投递
@@ -309,7 +310,7 @@ trait InteractsWithServer
             return;
         }
         
-        $parameter = new TimerParameter($timeId, $server, $this->container);
+        $parameter = new TimerParameter($timeId, $server, $app);
         call_user_func_array([$worker, 'onTimer'], [$parameter]);
         
         // 不需要投递到task中
@@ -320,10 +321,12 @@ trait InteractsWithServer
         // 异步任务
         if ($parameter->isAsync()) {
             $server->task(new TaskJob($worker, $parameter->getData()), $parameter->getDstWorkerId(), function(Server $server, int $taskId, $finishData) use ($worker, $parameter) {
-                call_user_func_array([
-                    $worker,
-                    'onFinish'
-                ], [new FinishParameter($this->container, $server, $parameter->getData(), $finishData, $taskId)]);
+                $this->runInSandbox(function(App $app, Server $server) use ($parameter, $finishData, $taskId, $worker) {
+                    call_user_func_array([
+                        $worker,
+                        'onFinish'
+                    ], [new FinishParameter($app, $server, $parameter->getData(), $finishData, $taskId)]);
+                }, "task_finish_{$taskId}");
             });
         } else {
             // 同步并发任务
@@ -346,7 +349,7 @@ trait InteractsWithServer
                 call_user_func_array([
                     $worker,
                     'onFinish'
-                ], [new FinishParameter($this->container, $server, $data, $results)]);
+                ], [new FinishParameter($app, $server, $data, $results)]);
             }
             
             //
@@ -357,7 +360,7 @@ trait InteractsWithServer
                 call_user_func_array([
                     $worker,
                     'onFinish'
-                ], [new FinishParameter($this->container, $server, $parameter->getData(), $results, $parameter->getDstWorkerId())]);
+                ], [new FinishParameter($app, $server, $parameter->getData(), $results, $parameter->getDstWorkerId())]);
             }
         }
     }

@@ -159,7 +159,6 @@ return [
         'exclude' => [],
     ],
     
-    
     // 连接池
     'pool'       => [
         // 数据库连接池
@@ -179,7 +178,7 @@ return [
         //自定义连接池
     ],
     
-    // 队列
+    // 队列任务
     // 不会争抢数据，单进程处理
     'queue'      => [
         'enable'  => false,
@@ -203,7 +202,7 @@ return [
         ],
     ],
     
-    // 任务
+    // 非列队任务
     // 会争抢数据，多进程处理
     'task'       => [
         'enable'  => false,
@@ -212,11 +211,13 @@ return [
         ]
     ],
     
+    // 协程
     'coroutine' => [
         'enable' => true,
         'flags'  => SWOOLE_HOOK_ALL,
     ],
     
+    // 自定义 Swoole Table
     'tables'    => [],
     
     // 每个worker里需要预加载以共用的实例

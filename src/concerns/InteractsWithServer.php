@@ -19,6 +19,7 @@ use Swoole\Process;
 use Swoole\Runtime;
 use Swoole\Server;
 use Swoole\Server\Task;
+use think\Collection;
 use think\Event;
 use think\helper\Str;
 use BusyPHP\swoole\FileWatcher;
@@ -332,8 +333,10 @@ trait InteractsWithServer
             // 同步并发任务
             if ($parameter->isMulti()) {
                 $data = $parameter->getData();
-                if (!is_array($data) || ArrayHelper::isAssoc($data)) {
-                    throw new InvalidArgumentException('Deliver data must be an numeric index array');
+                if (!$data instanceof Collection) {
+                    if (!is_array($data) || ArrayHelper::isAssoc($data)) {
+                        throw new InvalidArgumentException('Deliver data must be an numeric index array or be an class think\Collection');
+                    }
                 }
                 
                 if (count($data) > 1024) {
@@ -346,6 +349,9 @@ trait InteractsWithServer
                 }
                 
                 $results = $server->taskCo($tasks, $parameter->getTimeout());
+                if ($data instanceof Collection) {
+                    $results = Collection::make($results);
+                }
                 call_user_func_array([
                     $worker,
                     'onFinish'

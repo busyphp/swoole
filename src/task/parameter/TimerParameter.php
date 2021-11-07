@@ -4,6 +4,7 @@ namespace BusyPHP\swoole\task\parameter;
 
 use BusyPHP\App;
 use Swoole\Server;
+use think\Collection;
 
 /**
  * onTimer参数
@@ -132,11 +133,11 @@ class TimerParameter
      * 设置启用同步等待并发任务。
      * - 系统会将 $data 中的值分配给每一个task中执行，直到执行完毕或者超时。
      * - 警告：该方法会阻塞进程。
-     * @param array $data 投递的任务数据，必须是索引数组，数组长度不能超过 1024
-     * @param float $timeout 任务超时时长控制。单位秒
+     * @param array|Collection $data 投递的任务数据，必须是索引数组或 {@see Collection}，数组长度不能超过 1024
+     * @param float            $timeout 任务超时时长控制。单位秒
      * @return $this
      */
-    public function setSyncMulti(array $data, float $timeout = 0.5) : self
+    public function setSyncMulti($data, float $timeout = 0.5) : self
     {
         $this->async   = false;
         $this->multi   = true;

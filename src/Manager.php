@@ -56,7 +56,7 @@ class Manager
          * 此事件在 Server 正常结束时发生
          * @see InteractsWithServer::onShutdown()
          */
-        'shutDown',
+        'shutdown',
         
         /**
          * Worker启动事件

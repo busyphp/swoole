@@ -7,6 +7,7 @@ use BusyPHP\swoole\concerns\InteractsWithCoordinator;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
 use BusyPHP\swoole\contract\tcp\TcpHandlerInterface;
+use BusyPHP\swoole\Sandbox;
 use BusyPHP\swoole\tcp\handler\TcpHandler;
 use Swoole\Server;
 use Swoole\Server\Port;
@@ -89,7 +90,7 @@ class Manager
             }
             
             $this->triggerEvent('tcp.connect', $args);
-        }, $fd, true);
+        }, Sandbox::createFd('tcp_', $fd, $reactorId, $server->worker_id), true);
     }
     
     
@@ -109,7 +110,7 @@ class Manager
             }
             
             $this->triggerEvent("tcp.receive", $args);
-        }, $fd, true);
+        }, Sandbox::createFd('tcp_', $fd, $reactorId, $server->worker_id), true);
     }
     
     
@@ -128,6 +129,6 @@ class Manager
             }
             
             $this->triggerEvent('tcp.close', $args);
-        }, $fd);
+        }, Sandbox::createFd('tcp_', $fd, $reactorId, $server->worker_id));
     }
 }

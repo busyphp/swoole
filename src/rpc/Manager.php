@@ -3,6 +3,7 @@
 namespace BusyPHP\swoole\rpc;
 
 use BusyPHP\App;
+use BusyPHP\swoole\Sandbox;
 use Swoole\Coroutine;
 use Swoole\Server;
 use Swoole\Server\Port;
@@ -237,7 +238,7 @@ class Manager
         $args = func_get_args();
         $this->runInSandbox(function(Event $event) use ($args) {
             $event->trigger('swoole.rpc.Connect', $args);
-        }, $fd, true);
+        }, Sandbox::createFd('rpc_', $fd, $reactorId, $server->worker_id), true);
     }
     
     
@@ -246,7 +247,7 @@ class Manager
         $this->recv($server, $fd, $data, function($data) use ($fd) {
             $this->runInSandbox(function(App $app, Dispatcher $dispatcher) use ($fd, $data) {
                 $dispatcher->dispatch($app, $fd, $data);
-            }, $fd, true);
+            }, Sandbox::createFd('rpc_', $fd, $reactorId, $server->worker_id), true);
         });
     }
     
@@ -257,6 +258,6 @@ class Manager
         $args = func_get_args();
         $this->runInSandbox(function(Event $event) use ($args) {
             $event->trigger('swoole.rpc.Close', $args);
-        }, $fd);
+        }, Sandbox::createFd('rpc_', $fd, $reactorId, $server->worker_id));
     }
 }

@@ -3,7 +3,9 @@
 namespace BusyPHP\swoole\concerns;
 
 use BusyPHP\App;
-use Swoole\Http\Request;
+use BusyPHP\Request;
+use BusyPHP\swoole\Sandbox;
+use Swoole\Http\Request as SwooleRequest;
 use Swoole\Websocket\Frame;
 use Swoole\Websocket\Server;
 use think\Container;
@@ -62,8 +64,8 @@ trait InteractsWithWebsocket
     /**
      * "onOpen" listener.
      *
-     * @param Server  $server
-     * @param Request $req
+     * @param Server        $server
+     * @param SwooleRequest $req
      */
     public function onOpen($server, $req)
     {
@@ -75,7 +77,7 @@ trait InteractsWithWebsocket
             $request = $this->setRequestThroughMiddleware($app, $request);
             $websocket->setSender($req->fd);
             $websocket->onOpen($req->fd, $request);
-        }, $req->fd, true);
+        }, Sandbox::createFd('ws_', $server->worker_id, $req->fd), true);
     }
     
     
@@ -90,7 +92,7 @@ trait InteractsWithWebsocket
         $this->runInSandbox(function(Websocket $websocket) use ($frame) {
             $websocket->setSender($frame->fd);
             $websocket->onMessage($frame);
-        }, $frame->fd, true);
+        }, Sandbox::createFd('ws_', $server->worker_id, $frame->fd), true);
     }
     
     
@@ -115,16 +117,16 @@ trait InteractsWithWebsocket
                 // leave all rooms
                 $websocket->leave();
             }
-        }, $fd);
+        }, Sandbox::createFd('ws_', $server->worker_id, $fd));
     }
     
     
     /**
-     * @param App              $app
-     * @param \BusyPHP\Request $request
-     * @return \BusyPHP\Request
+     * @param App     $app
+     * @param Request $request
+     * @return Request
      */
-    protected function setRequestThroughMiddleware(App $app, \BusyPHP\Request $request)
+    protected function setRequestThroughMiddleware(App $app, Request $request)
     {
         return Middleware::make($app, $this->getConfig('websocket.middleware', []))
             ->pipeline()

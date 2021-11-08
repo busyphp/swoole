@@ -9,6 +9,7 @@ use BusyPHP\swoole\concerns\InteractsWithCoordinator;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
 use BusyPHP\swoole\contract\BaseGateway;
+use BusyPHP\swoole\Sandbox;
 use Exception;
 use RuntimeException;
 use Swoole\Server;
@@ -64,7 +65,7 @@ class Manager
     {
         $this->waitCoordinator('workerStart');
         $this->runInSandbox(function() use ($server, $fd, $reactorId) {
-        }, $fd, true);
+        }, Sandbox::createFd('gateway_', $fd, $reactorId, $server->worker_id), true);
     }
     
     
@@ -115,7 +116,7 @@ class Manager
             } catch (Exception $e) {
                 $server->send($fd, json_encode(['status' => false, 'message' => $e->getMessage()]));
             }
-        }, $fd, true);
+        }, Sandbox::createFd('gateway_', $fd, $reactorId, $server->worker_id), true);
     }
     
     
@@ -128,6 +129,6 @@ class Manager
     public function onClose(Server $server, int $fd, int $reactorId)
     {
         $this->runInSandbox(function() use ($server, $fd, $reactorId) {
-        }, $fd);
+        }, Sandbox::createFd('gateway_', $fd, $reactorId, $server->worker_id));
     }
 }

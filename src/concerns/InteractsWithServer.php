@@ -7,7 +7,9 @@ use BusyPHP\exception\ClassNotFoundException;
 use BusyPHP\exception\ClassNotImplementsException;
 use BusyPHP\helper\ArrayHelper;
 use BusyPHP\swoole\contract\task\TaskWorkerInterface;
+use BusyPHP\swoole\coroutine\Context;
 use BusyPHP\swoole\Job;
+use BusyPHP\swoole\Sandbox;
 use BusyPHP\swoole\task\Job as TaskJob;
 use BusyPHP\swoole\task\parameter\FinishParameter;
 use BusyPHP\swoole\task\parameter\TimerParameter;
@@ -113,15 +115,15 @@ trait InteractsWithServer
      */
     public function onTask($server, Task $task)
     {
-        $this->runInSandbox(function(Event $event, App $app) use ($task) {
+        $this->runInSandbox(function(Event $event, App $app) use ($task, $server) {
             if ($task->data instanceof Job) {
                 $task->data->run($app);
             } elseif ($task->data instanceof TaskJob) {
-                $task->data->run($app, $this->getServer(), $task);
+                $task->data->run($app, $server, $task);
             } else {
                 $event->trigger('swoole.task', $task);
             }
-        }, $task->id);
+        }, Sandbox::createFd('task_', $task->worker_id, $task->id));
     }
     
     
@@ -270,10 +272,11 @@ trait InteractsWithServer
             throw new RuntimeException('the interval must be greater than 0 milliseconds');
         }
         
-        $this->getServer()->tick($interval, function($timeId) use ($worker) {
+        $server = $this->getServer();
+        $server->tick($interval, function($timeId) use ($worker, $server) {
             $this->runInSandbox(function(App $app, Server $server) use ($worker, $timeId) {
                 $this->runTask($app, $server, $worker, $timeId);
-            }, "task_time_{$timeId}");
+            }, Sandbox::createFd('task_time_', $server->worker_id, $timeId, Context::getCoroutineId()));
         });
     }
     
@@ -327,7 +330,7 @@ trait InteractsWithServer
                         $worker,
                         'onFinish'
                     ], [new FinishParameter($app, $server, $parameter->getData(), $finishData, $taskId)]);
-                }, "task_finish_{$taskId}");
+                }, Sandbox::createFd('task_finish_', $server->worker_id, $taskId));
             });
         } else {
             // 同步并发任务

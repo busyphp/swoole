@@ -331,4 +331,16 @@ class Sandbox
             $resetter->handle($app, $this);
         }
     }
+    
+    
+    /**
+     * 生成Fd
+     * @param string $prefix
+     * @param mixed  ...$str
+     * @return string
+     */
+    public static function createFd(string $prefix, ...$str) : string
+    {
+        return $prefix . md5(implode(',', $str));
+    }
 }

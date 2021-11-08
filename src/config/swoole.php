@@ -152,7 +152,8 @@ return [
     // 会争抢数据，多进程处理
     'task'       => [
         'enable'  => false,
-        'workers' => [// 任务类名，必须集成 \BusyPHP\swoole\contract\task\TaskWorkerInterface 接口
+        'workers' => [
+            // 任务类名，必须实现 \BusyPHP\swoole\contract\task\TaskWorkerInterface 接口
         ]
     ],
     

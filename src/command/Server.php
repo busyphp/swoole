@@ -37,6 +37,8 @@ class Server extends Command
         });
         
         $this->app->bind(PidManager::class, function() {
+            // 设置 pid 文件地址
+            // https://wiki.swoole.com/#/server/setting?id=pid_file
             $pidFile = $this->app->config->get('swoole.server.options.pid_file', '');
             $pidFile = $pidFile ?: $this->app->getRuntimeRootPath('swoole/run.pid');
             $pidDir  = dirname($pidFile);
@@ -201,9 +203,21 @@ class Server extends Command
         /** @var SwooleServer $server */
         $server = new $serverClass($host, $port, $mode, $socketType);
         
-        $options = $config->get('swoole.server.options');
+        // 初始化配置
+        $options = $config->get('swoole.server.options', '') ?: [];
+        
+        // 配置 Task 进程的数量，最大值不得超过 swoole_cpu_num() * 1000
+        // https://wiki.swoole.com/#/server/setting?id=task_worker_num
+        $options['task_worker_num'] = $options['task_worker_num'] ?? swoole_cpu_num();
+        
+        // 开启静态文件请求处理功能，需配合 document_root 使用
+        // https://wiki.swoole.com/#/http_server?id=enable_static_handler
+        // https://wiki.swoole.com/#/http_server?id=document_root
+        $options['enable_static_handler'] = true;
+        $options['document_root']         = $this->app->getRootPath() . 'public' . DIRECTORY_SEPARATOR;
         
         // 日志文件
+        // https://wiki.swoole.com/#/server/setting?id=log_file
         $options['log_file'] = $options['log_file'] ?? '';
         $options['log_file'] = $options['log_file'] ?: $this->app->getRuntimeRootPath('swoole/run.log');
         $logDir              = dirname($options['log_file']);

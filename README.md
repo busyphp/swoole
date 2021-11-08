@@ -2,7 +2,7 @@ Swoole守护程序
 ===============
 
 > 基于 `think-swoole` 开发<br />
-> 支持异步数据处理，如批量发送邮件、短信等。可用于创建`Http`服务器，`Websocket`服务器、`Rpc`服务器等脱离`Apache`、`Nginx`等服务器独立运行，独立运行环境下支持`Swoole`携程开发
+> 支持异步数据处理，如批量发送邮件、短信等。可用于创建Http服务，Websocket服务、Tcp服务、Rpc服务以脱离Apache、Nginx等独立运行，独立运行环境下支持 `Swoole` 协程开发
 
 ## 安装方式
 
@@ -10,11 +10,11 @@ Swoole守护程序
 composer require busyphp/swoole
 ```
 
-> 安装完成后可以通过后台管理 > 开发模式 > 插件管理进行管理
+> 安装完成后可以通过后台管理 > 开发模式 > 插件管理进行 `安装/卸载/管理`
 
 ## 服务命令
 
-适用于 `http`，`tcp`，`websocket`等服务<br />
+适用于 `http`，`tcp`，`websocket`, `rpc` 等服务<br />
 `cd` 到到项目根目录下执行
 
 ### 启动命令
@@ -116,7 +116,7 @@ return [
 
 #### 创建任务类
 
-> 单任务类推荐集成 `\BusyPHP\swoole\contract\JobInterface` 接口类，以便编辑器辅助提示 <br />
+> 单任务类推荐实现 `\BusyPHP\swoole\contract\JobInterface` 接口类，以便编辑器辅助提示 <br />
 > 如果有多个小任务，就写多个方法，下面发布任务的时候会有区别
 
 ##### 下面写两个例子
@@ -233,7 +233,7 @@ class Job1
 
 ## 定时任务服务
 
-多进程服务，会出现数据争抢，需要自己处理争抢问题，适用大型数据处理
+多进程服务，会出现数据争抢，需自己处理争抢问题，适用大型数据处理
 
 ## 定时任务配置
 

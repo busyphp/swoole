@@ -59,7 +59,7 @@
 		},
 		"busyphp" : {
 			"manager"  : {
-				"name"    : "Swoole守护程序",
+				"name"    : "Swoole模块",
 				"class"   : "BusyPHP\\swoole\\app\\controller\\ManagerController",
 				"install" : {
 					"install_operate"   : {

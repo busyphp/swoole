@@ -10,7 +10,7 @@ return [
         'public'  => false,
         
         // 监听地址
-        'host'    => env('SWOOLE_HOST', '127.0.0.1'),
+        'host'    => env('SWOOLE_HOST', '0.0.0.0'),
         
         // 监听端口
         'port'    => env('SWOOLE_PORT', 80),
@@ -45,9 +45,9 @@ return [
         'room'          => [
             'type'  => 'table',
             'table' => [
-                'room_rows'   => 4096,
+                'room_rows'   => 8192,
                 'room_size'   => 2048,
-                'client_rows' => 8192,
+                'client_rows' => 4096,
                 'client_size' => 2048,
             ],
             'redis' => [
@@ -100,6 +100,7 @@ return [
         'include' => [
             app()->getRootPath() . 'app',
             app()->getRootPath() . 'core',
+            app()->getRootPath() . 'config',
             app()->getRootPath() . 'extend',
         ],
         'exclude' => [],

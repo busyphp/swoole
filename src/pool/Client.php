@@ -5,6 +5,12 @@ namespace BusyPHP\swoole\pool;
 use Smf\ConnectionPool\Connectors\ConnectorInterface;
 use think\helper\Arr;
 
+/**
+ * Swoole Table 连接池
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 上午9:29 Client.php $
+ */
 class Client implements ConnectorInterface
 {
     /**
@@ -31,7 +37,6 @@ class Client implements ConnectorInterface
     /**
      * Disconnect and free resources
      * @param \Swoole\Coroutine\Client $connection
-     * @return mixed
      */
     public function disconnect($connection)
     {
@@ -54,7 +59,6 @@ class Client implements ConnectorInterface
      * Reset the connection
      * @param \Swoole\Coroutine\Client $connection
      * @param array                    $config
-     * @return mixed
      */
     public function reset($connection, array $config)
     {

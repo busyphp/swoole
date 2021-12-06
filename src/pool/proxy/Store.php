@@ -6,6 +6,12 @@ use Psr\SimpleCache\CacheInterface;
 use think\contract\CacheHandlerInterface;
 use BusyPHP\swoole\pool\Proxy;
 
+/**
+ * 缓存接口代理
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 上午9:30 Store.php $
+ */
 class Store extends Proxy implements CacheHandlerInterface, CacheInterface
 {
     /**

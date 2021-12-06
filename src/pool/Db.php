@@ -7,16 +7,25 @@ use think\db\ConnectionInterface;
 use BusyPHP\swoole\pool\proxy\Connection;
 
 /**
- * Class Db
- * @package BusyPHP\swoole\pool
+ * 数据库连接池
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 上午9:27 Db.php $
  * @property Config $config
  */
 class Db extends \BusyPHP\Db
 {
     protected function createConnection(string $name) : ConnectionInterface
     {
-        return new Connection(function() use ($name) {
+        return new Connection(new class(function() use ($name) {
             return parent::createConnection($name);
+        }) extends Connector {
+            public function disconnect($connection)
+            {
+                if ($connection instanceof ConnectionInterface) {
+                    $connection->close();
+                }
+            }
         }, $this->config->get('swoole.pool.db', []));
     }
     

@@ -7,10 +7,15 @@ use RuntimeException;
 use Smf\ConnectionPool\ConnectionPool;
 use Smf\ConnectionPool\Connectors\ConnectorInterface;
 use Swoole\Coroutine;
-use Swoole\Event;
 use BusyPHP\swoole\coroutine\Context;
 use BusyPHP\swoole\Pool;
 
+/**
+ * 连接池基本类
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 上午9:34 Proxy.php $
+ */
 abstract class Proxy
 {
     const KEY_RELEASED = '__released';
@@ -20,57 +25,25 @@ abstract class Proxy
     
     /**
      * Proxy constructor.
-     * @param Closure $creator
-     * @param array   $config
+     * @param Closure|ConnectorInterface $connector
+     * @param array                      $config
+     * @param array                      $connectionConfig
      */
-    public function __construct($creator, $config)
+    public function __construct($connector, $config, array $connectionConfig = [])
     {
-        $this->pool = new ConnectionPool(Pool::pullPoolConfig($config), new class($creator) implements ConnectorInterface {
-            protected $creator;
-            
-            
-            public function __construct($creator)
-            {
-                $this->creator = $creator;
-            }
-            
-            
-            public function connect(array $config)
-            {
-                return call_user_func($this->creator);
-            }
-            
-            
-            public function disconnect($connection)
-            {
-                //强制回收内存，完成连接释放
-                Event::defer(function() {
-                    Coroutine::create('gc_collect_cycles');
-                });
-            }
-            
-            
-            public function isConnected($connection) : bool
-            {
-                return true;
-            }
-            
-            
-            public function reset($connection, array $config)
-            {
-            }
-            
-            
-            public function validate($connection) : bool
-            {
-                return true;
-            }
-        }, []);
+        if ($connector instanceof Closure) {
+            $connector = new Connector($connector);
+        }
         
+        $this->pool = new ConnectionPool(Pool::pullPoolConfig($config), $connector, $connectionConfig);
         $this->pool->init();
     }
     
     
+    /**
+     * 获取一个连接
+     * @return mixed
+     */
     protected function getPoolConnection()
     {
         return Context::rememberData('connection.' . spl_object_id($this), function() {
@@ -79,9 +52,8 @@ abstract class Proxy
             $connection->{static::KEY_RELEASED} = false;
             
             Coroutine::defer(function() use ($connection) {
-                //自动归还
-                $connection->{static::KEY_RELEASED} = true;
-                $this->pool->return($connection);
+                //自动释放
+                $this->releaseConnection($connection);
             });
             
             return $connection;
@@ -89,13 +61,24 @@ abstract class Proxy
     }
     
     
-    public function release()
+    /**
+     * 释放连接
+     * @param $connection
+     */
+    protected function releaseConnection($connection)
     {
-        $connection = $this->getPoolConnection();
         if ($connection->{static::KEY_RELEASED}) {
             return;
         }
+        $connection->{static::KEY_RELEASED} = true;
         $this->pool->return($connection);
+    }
+    
+    
+    public function release()
+    {
+        $connection = $this->getPoolConnection();
+        $this->releaseConnection($connection);
     }
     
     

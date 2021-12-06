@@ -9,8 +9,10 @@ use think\DbManager;
 use BusyPHP\swoole\pool\Proxy;
 
 /**
- * Class Connection
- * @package BusyPHP\swoole\pool\db
+ * 数据库接口代理
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 上午9:30 Connection.php $
  * @property ConnectionInterface $handler
  */
 class Connection extends Proxy implements ConnectionInterface

@@ -22,6 +22,9 @@ use BusyPHP\swoole\PidManager;
  */
 class Server extends Command
 {
+    /**
+     * 配置指令
+     */
     public function configure()
     {
         $this->setName('swoole')
@@ -30,6 +33,11 @@ class Server extends Command
     }
     
     
+    /**
+     * 初始化
+     * @param Input  $input
+     * @param Output $output
+     */
     protected function initialize(Input $input, Output $output)
     {
         $this->app->bind(SwooleServer::class, function() {
@@ -55,6 +63,9 @@ class Server extends Command
     }
     
     
+    /**
+     * 处理指令
+     */
     public function handle()
     {
         $this->checkEnvironment();

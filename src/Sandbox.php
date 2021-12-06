@@ -2,15 +2,19 @@
 
 namespace BusyPHP\swoole;
 
+use ArrayObject;
+use BusyPHP\exception\ClassNotImplementsException;
+use BusyPHP\Model as BusyModel;
 use Closure;
-use Exception;
 use InvalidArgumentException;
 use ReflectionException;
 use ReflectionObject;
-use RuntimeException;
+use Swoole\Coroutine;
 use think\Config;
+use think\console\Output;
 use think\Container;
 use think\Event;
+use think\exception\Handle;
 use think\Http;
 use BusyPHP\swoole\concerns\ModifyProperty;
 use BusyPHP\swoole\contract\ResetterInterface;
@@ -19,6 +23,7 @@ use BusyPHP\swoole\resetters\ClearInstances;
 use BusyPHP\swoole\resetters\ResetConfig;
 use BusyPHP\swoole\resetters\ResetEvent;
 use BusyPHP\swoole\resetters\ResetService;
+use think\Model;
 use Throwable;
 use BusyPHP\swoole\App as SwooleApp;
 
@@ -56,9 +61,12 @@ class Sandbox
     /**
      * @var ResetterInterface[]
      */
-    protected $resetters = [];
+    protected $resetList = [];
     
-    protected $services  = [];
+    /**
+     * @var array
+     */
+    protected $services = [];
     
     
     /**
@@ -110,7 +118,7 @@ class Sandbox
         $this->setInitialConfig();
         $this->setInitialServices();
         $this->setInitialEvent();
-        $this->setInitialResetters();
+        $this->setInitialResets();
         
         return $this;
     }
@@ -119,34 +127,31 @@ class Sandbox
     /**
      * 运行
      * @param Closure $callable 自定义回调
-     * @param int     $fd 容器标识
-     * @param bool    $persistent 持久化
-     * @throws Throwable
+     * @throws ReflectionException
      */
-    public function run(Closure $callable, $fd = null, $persistent = false)
+    public function run(Closure $callable)
     {
-        $this->init($fd);
+        $this->init();
         
         try {
             $this->getApplication()->invoke($callable, [$this]);
         } catch (Throwable $e) {
-            throw $e;
+            /** @var Handle $handle */
+            $handle = $this->getApplication()->make(Handle::class);
+            $handle->renderForConsole(new Output(), $e);
+            $handle->report($e);
         } finally {
-            $this->clear(!$persistent);
+            $this->clear();
         }
     }
     
     
     /**
      * 初始化容器
-     * @param mixed $fd 容器标识
      * @throws ReflectionException
      */
-    public function init($fd = null)
+    public function init()
     {
-        if (!is_null($fd)) {
-            Context::setData('_fd', $fd);
-        }
         $app = $this->getApplication(true);
         $this->setInstance($app);
         $this->resetApp($app);
@@ -154,21 +159,14 @@ class Sandbox
     
     
     /**
-     * 清空
-     * @param bool $snapshot
-     * @throws Exception
+     * 清理实例
+     * @throws ReflectionException
      */
-    public function clear($snapshot = true)
+    public function clear()
     {
-        if ($snapshot && $this->getSnapshot()) {
+        if ($app = $this->getSnapshot()) {
+            $app->clearInstances();
             unset($this->snapshots[$this->getSnapshotId()]);
-            
-            // 垃圾回收
-            $divisor     = $this->config->get('swoole.gc.divisor', 100);
-            $probability = $this->config->get('swoole.gc.probability', 1);
-            if (random_int(1, $divisor) <= $probability) {
-                gc_collect_cycles();
-            }
         }
         
         Context::clear();
@@ -176,9 +174,14 @@ class Sandbox
     }
     
     
-    public function getApplication($init = false)
+    /**
+     * 获取APP对象
+     * @param bool $init
+     * @return \BusyPHP\App
+     */
+    public function getApplication($init = false) : \BusyPHP\App
     {
-        $snapshot = $this->getSnapshot();
+        $snapshot = $this->getSnapshot($init);
         if ($snapshot instanceof Container) {
             return $snapshot;
         }
@@ -189,31 +192,58 @@ class Sandbox
             
             return $snapshot;
         }
-        throw new InvalidArgumentException('The app object has not been initialized');
-    }
-    
-    
-    protected function getSnapshotId()
-    {
-        if ($fd = Context::getData('_fd')) {
-            return 'fd_' . $fd;
-        }
         
-        return Context::getCoroutineId();
+        throw new InvalidArgumentException('The app object has not been initialized, SnapshotId: ' . $this->getSnapshotId($init) . ', init: ' . ($init ? 'true' : 'false'));
     }
     
     
     /**
-     * Get current snapshot.
-     * @return \BusyPHP\App|null
+     * 获取快照ID
+     * @param bool $init
+     * @return int
      */
-    public function getSnapshot()
+    protected function getSnapshotId($init = false) : int
     {
-        return $this->snapshots[$this->getSnapshotId()] ?? null;
+        if ($init) {
+            /** @var ArrayObject $context */
+            $context = Coroutine::getContext();
+            $context->offsetSet('#root', true);
+            
+            return Coroutine::getCid();
+        } else {
+            $cid = Coroutine::getCid();
+            
+            /** @var ArrayObject $context */
+            $context = Coroutine::getContext($cid);
+            while (!$context->offsetExists('#root')) {
+                $cid = Coroutine::getPcid($cid);
+                if ($cid < 1) {
+                    break;
+                }
+            }
+            
+            return $cid;
+        }
     }
     
     
-    public function setSnapshot(Container $snapshot)
+    /**
+     * 设置快照
+     * @param bool $init
+     * @return \BusyPHP\App|null
+     */
+    public function getSnapshot($init = false)
+    {
+        return $this->snapshots[$this->getSnapshotId($init)] ?? null;
+    }
+    
+    
+    /**
+     * 获取快照
+     * @param Container $snapshot
+     * @return $this
+     */
+    public function setSnapshot(Container $snapshot) : self
     {
         $this->snapshots[$this->getSnapshotId()] = $snapshot;
         
@@ -298,25 +328,25 @@ class Sandbox
     /**
      * 初始化重置器
      */
-    protected function setInitialResetters()
+    protected function setInitialResets()
     {
         $app = $this->getBaseApp();
         
-        $resetters = [
+        $resetList = [
             ClearInstances::class,
             ResetConfig::class,
             ResetEvent::class,
             ResetService::class,
         ];
         
-        $resetters = array_merge($resetters, $this->config->get('swoole.resetters', []));
+        $resetList = array_merge($resetList, $this->config->get('swoole.resetters', []));
         
-        foreach ($resetters as $resetter) {
-            $resetterClass = $app->make($resetter);
-            if (!$resetterClass instanceof ResetterInterface) {
-                throw new RuntimeException("{$resetter} must implement " . ResetterInterface::class);
+        foreach ($resetList as $reset) {
+            $impl = $app->make($reset);
+            if (!$impl instanceof ResetterInterface) {
+                throw new ClassNotImplementsException($reset, ResetterInterface::class);
             }
-            $this->resetters[$resetter] = $resetterClass;
+            $this->resetList[$reset] = $impl;
         }
     }
     
@@ -327,20 +357,16 @@ class Sandbox
      */
     protected function resetApp(Container $app)
     {
-        foreach ($this->resetters as $resetter) {
-            $resetter->handle($app, $this);
+        foreach ($this->resetList as $reset) {
+            $reset->handle($app, $this);
         }
-    }
-    
-    
-    /**
-     * 生成Fd
-     * @param string $prefix
-     * @param mixed  ...$str
-     * @return string
-     */
-    public static function createFd(string $prefix, ...$str) : string
-    {
-        return $prefix . md5(implode(',', $str));
+        
+        Model::setInvoker(function(...$args) {
+            return Container::getInstance()->invoke(...$args);
+        });
+        
+        BusyModel::setInvoker(function(...$args) {
+            return Container::getInstance()->invoke(...$args);
+        });
     }
 }

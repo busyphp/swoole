@@ -7,9 +7,7 @@ use BusyPHP\exception\ClassNotFoundException;
 use BusyPHP\exception\ClassNotImplementsException;
 use BusyPHP\helper\ArrayHelper;
 use BusyPHP\swoole\contract\task\TaskWorkerInterface;
-use BusyPHP\swoole\coroutine\Context;
 use BusyPHP\swoole\Job;
-use BusyPHP\swoole\Sandbox;
 use BusyPHP\swoole\task\Job as TaskJob;
 use BusyPHP\swoole\task\parameter\FinishParameter;
 use BusyPHP\swoole\task\parameter\TimerParameter;
@@ -27,8 +25,10 @@ use think\helper\Str;
 use BusyPHP\swoole\FileWatcher;
 
 /**
- * Trait InteractsWithServer
- * @package BusyPHP\swoole\concerns
+ * 服务类
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 下午9:13 InteractsWithServer.php $
  * @property App $container
  */
 trait InteractsWithServer
@@ -41,10 +41,7 @@ trait InteractsWithServer
         $this->getServer()->set([
             'task_enable_coroutine' => true,
             'send_yield'            => true,
-            'reload_async'          => true,
             'enable_coroutine'      => true,
-            'max_request'           => 0,
-            'task_max_request'      => 0,
         ]);
         $this->initialize();
         $this->triggerEvent('init');
@@ -73,7 +70,6 @@ trait InteractsWithServer
     public function onStart()
     {
         $this->setProcessName('master process');
-        
         $this->triggerEvent('start', func_get_args());
     }
     
@@ -96,7 +92,8 @@ trait InteractsWithServer
     public function onWorkerStart($server)
     {
         $this->resumeCoordinator('workerStart', function() use ($server) {
-            Runtime::enableCoroutine($this->getConfig('coroutine.enable', true), $this->getConfig('coroutine.flags', SWOOLE_HOOK_ALL));
+            // 启用协程
+            Runtime::enableCoroutine();
             
             $this->clearCache();
             $this->setProcessName($server->taskworker ? 'task process' : 'worker process');
@@ -123,7 +120,7 @@ trait InteractsWithServer
             } else {
                 $event->trigger('swoole.task', $task);
             }
-        }, Sandbox::createFd('task_', $task->worker_id, $task->id));
+        });
     }
     
     
@@ -269,14 +266,14 @@ trait InteractsWithServer
         
         $interval = call_user_func([$worker, 'getTimerIntervalMs']);
         if ($interval < 0) {
-            throw new RuntimeException('the interval must be greater than 0 milliseconds');
+            throw new RuntimeException('The interval must be greater than 0 milliseconds');
         }
         
         $server = $this->getServer();
         $server->tick($interval, function($timeId) use ($worker, $server) {
             $this->runInSandbox(function(App $app, Server $server) use ($worker, $timeId) {
                 $this->runTask($app, $server, $worker, $timeId);
-            }, Sandbox::createFd('task_time_', $server->worker_id, $timeId, Context::getCoroutineId()));
+            });
         });
     }
     
@@ -331,7 +328,7 @@ trait InteractsWithServer
                         $worker,
                         'onFinish'
                     ], [new FinishParameter($app, $server, $parameter->getData(), $finishData, $taskId)]);
-                }, Sandbox::createFd('task_finish_', $server->worker_id, $taskId));
+                });
             });
             
             return;

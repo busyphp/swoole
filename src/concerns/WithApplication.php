@@ -8,7 +8,7 @@ use BusyPHP\swoole\App as SwooleApp;
 use BusyPHP\swoole\pool\Cache;
 use BusyPHP\swoole\pool\Db;
 use BusyPHP\swoole\Sandbox;
-use Throwable;
+use ReflectionException;
 
 /**
  * Trait WithApplication
@@ -78,7 +78,7 @@ trait WithApplication
      * 获取沙箱
      * @return Sandbox
      */
-    protected function getSandbox()
+    protected function getSandbox() : Sandbox
     {
         return $this->app->make(Sandbox::class);
     }
@@ -87,15 +87,12 @@ trait WithApplication
     /**
      * 在沙箱中执行
      * @param Closure $callable
-     * @param null    $fd
-     * @param bool    $persistent
      */
-    protected function runInSandbox(Closure $callable, $fd = null, $persistent = false)
+    public function runInSandbox(Closure $callable)
     {
         try {
-            $this->getSandbox()->run($callable, $fd, $persistent);
-        } catch (Throwable $e) {
-            $this->logServerError($e);
+            $this->getSandbox()->run($callable);
+        } catch (ReflectionException $e) {
         }
     }
 }

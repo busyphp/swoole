@@ -1,4 +1,5 @@
 <?php
+
 namespace BusyPHP\swoole\concerns;
 
 use BusyPHP\App;
@@ -7,8 +8,10 @@ use think\Container;
 use BusyPHP\swoole\Table;
 
 /**
- * Trait InteractsWithSwooleTable
- *
+ * Swoole Table类
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 下午9:29 InteractsWithSwooleTable.php $
  * @property Container $container
  * @property App       $app
  */

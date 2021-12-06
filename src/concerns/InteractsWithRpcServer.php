@@ -9,8 +9,10 @@ use BusyPHP\swoole\Pool;
 use BusyPHP\swoole\rpc\Manager;
 
 /**
- * Trait InteractsWithRpc
- * @package BusyPHP\swoole\concerns
+ * RPC服务类
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 下午9:33 InteractsWithRpcServer.php $
  * @property App $app
  * @property App $container
  * @method Server getServer()

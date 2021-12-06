@@ -14,8 +14,10 @@ use BusyPHP\swoole\rpc\JsonRpcParser;
 use Throwable;
 
 /**
- * Trait InteractsWithRpcClient
- * @package BusyPHP\swoole\concerns
+ * RPC客户端类
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 下午9:34 InteractsWithRpcClient.php $
  * @property App $app
  * @property App $container
  * @method Server getServer()

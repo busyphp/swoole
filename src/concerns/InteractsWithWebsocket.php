@@ -4,7 +4,6 @@ namespace BusyPHP\swoole\concerns;
 
 use BusyPHP\App;
 use BusyPHP\Request;
-use BusyPHP\swoole\Sandbox;
 use Swoole\Http\Request as SwooleRequest;
 use Swoole\Websocket\Frame;
 use Swoole\Websocket\Server;
@@ -16,9 +15,10 @@ use BusyPHP\swoole\Websocket;
 use BusyPHP\swoole\websocket\Room;
 
 /**
- * Trait InteractsWithWebsocket
- * @package BusyPHP\swoole\concerns
- *
+ * WebSocket服务类
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/6 下午9:31 InteractsWithWebsocket.php $
  * @property App       $app
  * @property Container $container
  * @method \Swoole\Server getServer()
@@ -77,7 +77,7 @@ trait InteractsWithWebsocket
             $request = $this->setRequestThroughMiddleware($app, $request);
             $websocket->setSender($req->fd);
             $websocket->onOpen($req->fd, $request);
-        }, Sandbox::createFd('ws_', $server->worker_id, $req->fd), true);
+        });
     }
     
     
@@ -92,7 +92,7 @@ trait InteractsWithWebsocket
         $this->runInSandbox(function(Websocket $websocket) use ($frame) {
             $websocket->setSender($frame->fd);
             $websocket->onMessage($frame);
-        }, Sandbox::createFd('ws_', $server->worker_id, $frame->fd), true);
+        });
     }
     
     
@@ -117,7 +117,7 @@ trait InteractsWithWebsocket
                 // leave all rooms
                 $websocket->leave();
             }
-        }, Sandbox::createFd('ws_', $server->worker_id, $fd));
+        });
     }
     
     

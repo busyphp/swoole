@@ -2,7 +2,7 @@
 
 namespace BusyPHP\swoole\concerns;
 
-use BusyPHP\App;
+use BusyPHP\swoole\App;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Status;
@@ -40,6 +40,7 @@ trait InteractsWithHttp
         
         $args = func_get_args();
         $this->runInSandbox(function(Http $http, Event $event, App $app, Middleware $middleware) use ($args, $req, $res) {
+            $app->setInConsole(false);
             $event->trigger('swoole.request', $args);
             
             //兼容var-dumper

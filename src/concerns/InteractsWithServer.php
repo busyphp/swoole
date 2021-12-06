@@ -322,6 +322,7 @@ trait InteractsWithServer
             return;
         }
         
+        
         // 异步任务
         if ($parameter->isAsync()) {
             $server->task(new TaskJob($worker, $parameter->getData()), $parameter->getDstWorkerId(), function(Server $server, int $taskId, $finishData) use ($worker, $parameter) {
@@ -332,45 +333,47 @@ trait InteractsWithServer
                     ], [new FinishParameter($app, $server, $parameter->getData(), $finishData, $taskId)]);
                 }, Sandbox::createFd('task_finish_', $server->worker_id, $taskId));
             });
-        } else {
-            // 同步并发任务
-            if ($parameter->isMulti()) {
-                $data = $parameter->getData();
-                if (!$data instanceof Collection) {
-                    if (!is_array($data) || ArrayHelper::isAssoc($data)) {
-                        throw new InvalidArgumentException('Deliver data must be an numeric index array or be an class think\Collection');
-                    }
+            
+            return;
+        }
+        
+        
+        // 同步并发任务
+        if ($parameter->isMulti()) {
+            $data = $parameter->getData();
+            if (!$data instanceof Collection) {
+                if (!is_array($data) || ArrayHelper::isAssoc($data)) {
+                    throw new InvalidArgumentException('Deliver data must be an numeric index array or be an class think\Collection');
                 }
-                
-                if (count($data) > 1024) {
-                    throw new DomainException('The maximum concurrent tasks must not exceed 1024');
-                }
-                
-                $tasks = [];
-                foreach ($data as $item) {
-                    $tasks[] = new TaskJob($worker, $item);
-                }
-                
-                $results = $server->taskCo($tasks, $parameter->getTimeout());
-                if ($data instanceof Collection) {
-                    $results = Collection::make($results);
-                }
-                call_user_func_array([
-                    $worker,
-                    'onFinish'
-                ], [new FinishParameter($app, $server, $data, $results)]);
             }
             
-            //
-            // 同步任务
-            else {
-                $results = $server->taskwait(new TaskJob($worker, $parameter->getData()), $parameter->getTimeout(), $parameter->getDstWorkerId());
-                
-                call_user_func_array([
-                    $worker,
-                    'onFinish'
-                ], [new FinishParameter($app, $server, $parameter->getData(), $results, $parameter->getDstWorkerId())]);
+            if (count($data) > 1024) {
+                throw new DomainException('The maximum concurrent tasks must not exceed 1024');
             }
+            
+            $tasks = [];
+            foreach ($data as $item) {
+                $tasks[] = new TaskJob($worker, $item);
+            }
+            
+            $results = $server->taskCo($tasks, $parameter->getTimeout());
+            if ($data instanceof Collection) {
+                $results = Collection::make($results);
+            }
+            call_user_func_array([
+                $worker,
+                'onFinish'
+            ], [new FinishParameter($app, $server, $data, $results)]);
+            
+            return;
         }
+        
+        
+        // 同步任务
+        $results = $server->taskwait(new TaskJob($worker, $parameter->getData()), $parameter->getTimeout(), $parameter->getDstWorkerId());
+        call_user_func_array([
+            $worker,
+            'onFinish'
+        ], [new FinishParameter($app, $server, $parameter->getData(), $results, $parameter->getDstWorkerId())]);
     }
 }

@@ -5,15 +5,18 @@ namespace BusyPHP\swoole\concerns;
 use BusyPHP\App;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
+use Swoole\Http\Status;
 use Swoole\Server;
 use Symfony\Component\VarDumper\VarDumper;
 use think\Container;
 use think\Cookie;
 use think\Event;
 use think\exception\Handle;
+use think\helper\Str;
 use think\Http;
 use think\Middleware;
 use BusyPHP\swoole\middleware\ResetVarDumper;
+use BusyPHP\swoole\response\File as FileResponse;
 use Throwable;
 
 /**
@@ -25,73 +28,6 @@ use Throwable;
  */
 trait InteractsWithHttp
 {
-    public static $statusTexts = [
-        100 => 'Continue',
-        101 => 'Switching Protocols',
-        102 => 'Processing',            // RFC2518
-        103 => 'Early Hints',
-        200 => 'OK',
-        201 => 'Created',
-        202 => 'Accepted',
-        203 => 'Non-Authoritative Information',
-        204 => 'No Content',
-        205 => 'Reset Content',
-        206 => 'Partial Content',
-        207 => 'Multi-Status',          // RFC4918
-        208 => 'Already Reported',      // RFC5842
-        226 => 'IM Used',               // RFC3229
-        300 => 'Multiple Choices',
-        301 => 'Moved Permanently',
-        302 => 'Found',
-        303 => 'See Other',
-        304 => 'Not Modified',
-        305 => 'Use Proxy',
-        307 => 'Temporary Redirect',
-        308 => 'Permanent Redirect',    // RFC7238
-        400 => 'Bad Request',
-        401 => 'Unauthorized',
-        402 => 'Payment Required',
-        403 => 'Forbidden',
-        404 => 'Not Found',
-        405 => 'Method Not Allowed',
-        406 => 'Not Acceptable',
-        407 => 'Proxy Authentication Required',
-        408 => 'Request Timeout',
-        409 => 'Conflict',
-        410 => 'Gone',
-        411 => 'Length Required',
-        412 => 'Precondition Failed',
-        413 => 'Payload Too Large',
-        414 => 'URI Too Long',
-        415 => 'Unsupported Media Type',
-        416 => 'Range Not Satisfiable',
-        417 => 'Expectation Failed',
-        418 => 'I\'m a teapot',                                               // RFC2324
-        421 => 'Misdirected Request',                                         // RFC7540
-        422 => 'Unprocessable Entity',                                        // RFC4918
-        423 => 'Locked',                                                      // RFC4918
-        424 => 'Failed Dependency',                                           // RFC4918
-        425 => 'Too Early',                                                   // RFC-ietf-httpbis-replay-04
-        426 => 'Upgrade Required',                                            // RFC2817
-        428 => 'Precondition Required',                                       // RFC6585
-        429 => 'Too Many Requests',                                           // RFC6585
-        431 => 'Request Header Fields Too Large',                             // RFC6585
-        449 => 'Retry With',
-        451 => 'Unavailable For Legal Reasons',                               // RFC7725
-        500 => 'Internal Server Error',
-        501 => 'Not Implemented',
-        502 => 'Bad Gateway',
-        503 => 'Service Unavailable',
-        504 => 'Gateway Timeout',
-        505 => 'HTTP Version Not Supported',
-        506 => 'Variant Also Negotiates',                                     // RFC2295
-        507 => 'Insufficient Storage',                                        // RFC4918
-        508 => 'Loop Detected',                                               // RFC5842
-        510 => 'Not Extended',                                                // RFC2774
-        511 => 'Network Authentication Required',                             // RFC6585
-    ];
-    
-    
     /**
      * "onRequest" listener.
      *
@@ -118,8 +54,33 @@ trait InteractsWithHttp
                 $response = $this->app->make(Handle::class)->render($request, $e);
             }
             
-            $this->sendResponse($res, $response, $app->cookie);
+            $this->setCookie($res, $app->cookie);
+            $this->sendResponse($res, $request, $response);
         });
+    }
+    
+    
+    protected function setCookie(Response $res, Cookie $cookie)
+    {
+        foreach ($cookie->getCookie() as $name => $val) {
+            [$value, $expire, $option] = $val;
+            
+            $res->cookie($name, $value, $expire, $option['path'], $option['domain'], (bool) $option['secure'], (bool) $option['httponly'], $option['samesite']);
+        }
+    }
+    
+    
+    protected function setHeader(Response $res, array $headers)
+    {
+        foreach ($headers as $key => $val) {
+            $res->header($key, $val);
+        }
+    }
+    
+    
+    protected function setStatus(Response $res, $code)
+    {
+        $res->status($code, Status::getReasonPhrase($code));
     }
     
     
@@ -176,44 +137,95 @@ trait InteractsWithHttp
     }
     
     
-    protected function sendResponse(Response $res, \think\Response $response, Cookie $cookie)
+    protected function sendFile(Response $res, \think\Request $request, FileResponse $response)
     {
-        // 发送Header
-        foreach ($response->getHeader() as $key => $val) {
-            $res->header($key, $val);
+        $code     = $response->getCode();
+        $ifRange  = $request->header('If-Range');
+        $file     = $response->getFile();
+        $fileSize = $file->getSize();
+        
+        $offset = 0;
+        $maxlen = -1;
+        
+        if (!$ifRange || $ifRange === $response->getHeader('ETag') || $ifRange === $response->getHeader('Last-Modified')) {
+            $range = $request->header('Range', '');
+            if (Str::startsWith($range, 'bytes=')) {
+                [$start, $end] = explode('-', substr($range, 6), 2) + [0];
+                
+                $end = ('' === $end) ? $fileSize - 1 : (int) $end;
+                
+                if ('' === $start) {
+                    $start = $fileSize - $end;
+                    $end   = $fileSize - 1;
+                } else {
+                    $start = (int) $start;
+                }
+                
+                if ($start <= $end) {
+                    $end = min($end, $fileSize - 1);
+                    if ($start < 0 || $start > $end) {
+                        $code = 416;
+                        $response->header([
+                            'Content-Range' => sprintf('bytes */%s', $fileSize),
+                        ]);
+                    } elseif ($end - $start < $fileSize - 1) {
+                        $maxlen = $end < $fileSize ? $end - $start + 1 : -1;
+                        $offset = $start;
+                        $code   = 206;
+                        $response->header([
+                            'Content-Range'  => sprintf('bytes %s-%s/%s', $start, $end, $fileSize),
+                            'Content-Length' => $end - $start + 1,
+                        ]);
+                    }
+                }
+            }
         }
         
-        // 发送状态码
-        $code = $response->getCode();
-        $res->status($code, isset(self::$statusTexts[$code]) ? self::$statusTexts[$code] : 'unknown status');
+        $this->setStatus($res, $code);
+        $this->setHeader($res, $response->getHeader());
         
-        foreach ($cookie->getCookie() as $name => $val) {
-            [$value, $expire, $option] = $val;
-            
-            $res->cookie($name, $value, $expire, $option['path'], $option['domain'], $option['secure'] ? true : false, $option['httponly'] ? true : false, $option['samesite']);
+        if ($code >= 200 && $code < 300 && $maxlen !== 0) {
+            $res->sendfile($file->getPathname(), $offset, $maxlen);
+        } else {
+            $res->end();
         }
-        
-        $content = $response->getContent();
-        
-        $this->sendByChunk($res, $content);
     }
     
     
-    protected function sendByChunk(Response $res, $content)
+    protected function sendContent(Response $res, \think\Response $response)
     {
-        $contentSize = \strlen($content);
-        $chunkSize   = 8192;
+        // 由于开启了 Transfer-Encoding: chunked，根据 HTTP 规范，不再需要设置 Content-Length
+        $response->header(['Content-Length' => null]);
         
-        if ($contentSize > $chunkSize) {
-            $sendSize = 0;
-            do {
-                if (!$res->write(\substr($content, $sendSize, $chunkSize))) {
-                    break;
-                }
-            } while (($sendSize += $chunkSize) < $contentSize);
-            $res->end();
+        $this->setStatus($res, $response->getCode());
+        $this->setHeader($res, $response->getHeader());
+        
+        $content = $response->getContent();
+        if ($content) {
+            $contentSize = strlen($content);
+            $chunkSize   = 8192;
+            
+            if ($contentSize > $chunkSize) {
+                $sendSize = 0;
+                do {
+                    if (!$res->write(substr($content, $sendSize, $chunkSize))) {
+                        break;
+                    }
+                } while (($sendSize += $chunkSize) < $contentSize);
+            } else {
+                $res->write($content);
+            }
+        }
+        $res->end();
+    }
+    
+    
+    protected function sendResponse(Response $res, \BusyPHP\Request $request, \think\Response $response)
+    {
+        if ($response instanceof FileResponse) {
+            $this->sendFile($res, $request, $response);
         } else {
-            $res->end($content);
+            $this->sendContent($res, $response);
         }
     }
 }

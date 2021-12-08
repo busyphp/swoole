@@ -31,13 +31,4 @@ class App extends \BusyPHP\App
     {
         return $this->inConsole;
     }
-    
-    
-    /**
-     * 清空实例
-     */
-    public function clearInstances()
-    {
-        $this->instances = [];
-    }
 }

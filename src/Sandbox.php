@@ -165,7 +165,6 @@ class Sandbox
     public function clear()
     {
         if ($app = $this->getSnapshot()) {
-            $app->clearInstances();
             unset($this->snapshots[$this->getSnapshotId()]);
         }
         

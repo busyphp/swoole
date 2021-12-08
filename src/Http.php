@@ -26,9 +26,9 @@ class Http extends ThinkHttp
     protected static $middleware;
     
     /**
-     * @var Route
+     * @var Route[]
      */
-    protected static $route;
+    protected static $routes = [];
     
     
     /**
@@ -50,22 +50,6 @@ class Http extends ThinkHttp
     
     
     /**
-     * 加载路由
-     * @throws ReflectionException
-     */
-    protected function loadRoutes() : void
-    {
-        parent::loadRoutes(); // 每次都重载路由
-        
-        if (!isset(self::$route)) {
-            self::$route = clone $this->app->route;
-            $this->modifyProperty(self::$route, null);
-            $this->modifyProperty(self::$route, null, 'request');
-        }
-    }
-    
-    
-    /**
      * 调度路由
      * @param Request $request
      * @return Response
@@ -73,12 +57,29 @@ class Http extends ThinkHttp
      */
     protected function dispatchToRoute($request)
     {
-        if (isset(self::$route)) {
-            $newRoute = clone self::$route;
+        if (isset(self::$routes[$this->name])) {
+            $newRoute = clone self::$routes[$this->name];
             $this->modifyProperty($newRoute, $this->app);
             $this->app->instance("route", $newRoute);
         }
         
         return parent::dispatchToRoute($request);
+    }
+    
+    
+    /**
+     * 加载路由
+     * @throws ReflectionException
+     */
+    protected function loadRoutes() : void
+    {
+        if (!isset(self::$routes[$this->name])) {
+            $this->app->route->clear();
+            parent::loadRoutes();
+            
+            self::$routes[$this->name] = clone $this->app->route;
+            $this->modifyProperty(self::$routes[$this->name], null);
+            $this->modifyProperty(self::$routes[$this->name], null, 'request');
+        }
     }
 }

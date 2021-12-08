@@ -233,9 +233,7 @@ class Job1
 
 ## 定时任务服务
 
-多进程服务，会出现数据争抢，需自己处理争抢问题，适用大型数据处理
-
-## 定时任务配置
+### 定时任务配置
 
 #### 配置 `config/swoole.php`
 
@@ -244,10 +242,11 @@ return [
     // 此处省略...
 
     // 定时任务配置
-    'task'      => [
+    'timer'      => [
         'enable'  => true,
         'workers' => [
-            // 任务类，必须实现 \BusyPHP\swoole\contract\task\TaskWorkerInterface 接口
+            // 计时器类名，必须实现 \BusyPHP\swoole\contract\timer\TimerInterface 接口
+            TimerTask::class
         ],
     ],
 
@@ -255,97 +254,11 @@ return [
 ];
 ```
 
-#### 创建定时任务类
+#### 创建计时器类
 
 ```php
 <?php
-use BusyPHP\swoole\task\parameter\FinishParameter;
-use BusyPHP\swoole\task\parameter\TaskParameter;
-use BusyPHP\swoole\task\parameter\TimerParameter;
-
-class TimerTask implements \BusyPHP\swoole\contract\task\TaskWorkerInterface {
-/**
-     * 定时任务间隔毫秒
-     * @return int
-     */
-    public static function getTimerIntervalMs() : int
-    {
-        return 1000;
-    }
+class TimerTask implements \BusyPHP\swoole\contract\timer\TimerInterface {
     
-    
-    /**
-     * 没有空闲进程的时候是否进行任务投递
-     * - 建议: false
-     * @return bool
-     */
-    public static function getTaskEmptyIdleStatus() : bool
-    {
-        return false;
-    }
-    
-    
-    /**
-     * 任务投递允许的排队数，0则不限制
-     * - 建议: 0
-     * @return int
-     */
-    public static function getTaskMaxNumber() : int
-    {
-        return 0;
-    }
-    
-    
-    /**
-     * 执行定时任务
-     * - 该方法一般用于不耗时的任务处理。
-     * - 处理耗时任务，建议在该方法中获取处理数据后投递到 task 中执行，不会阻塞定时器。
-     * - 注意：如果该方法耗时超过下一次计时，会导致下一次计时被系统丢弃；
-     * - 警告：投递数据超过 8K 时会启用临时文件来保存。
-     * - 当临时文件内容超过 server->package_max_length 时底层会抛出一个警告。此警告不影响数据的投递
-     * - 过大的 Task 可能会存在性能问题；
-     * @param TimerParameter $parameter
-     */
-    public static function onTimer(TimerParameter $parameter) : void
-    {
-        // 这里执行定时任务，可以对数据进行处理
-
-        // 数据处理耗时的，可以投递到task中
-        $parameter->setSync($data, 10); // 同步等待任务
-        $parameter->setSyncMulti($data, 10); // 同步并发等待任务
-        $parameter->setAsync($data); // 异步任务
-    }
-    
-    
-    /**
-     * 执行投递任务
-     * - 注意: 执行完成后返回执行成功的数据
-     * - 注意: 请不要使用 sleep/usleep/time_sleep_until/time_nanosleep 函数，
-     *   参见: {@link https://wiki.swoole.com/#/getting_started/notice?id=sleepusleep%e7%9a%84%e5%bd%b1%e5%93%8d}
-     * @param TaskParameter $parameter
-     * @return bool true执行成功，false执行失败
-     */
-    public static function onTask(TaskParameter $parameter) : bool
-    {
-        // 处理投递的数据
-        if ($parameter->data) {
-            // 处理成功
-            return true;
-        }
-        
-        return false;
-    }   
-    
-    
-    /**
-     * 投递任务执行完毕
-     * @param FinishParameter $parameter
-     */
-    public static function onFinish(FinishParameter $parameter) : void
-    {
-        // 投递数据执行完毕，可以使用数组交集对比，取出失败的数据进行处理
-        $parameter->originalData; // 原始数据
-        $parameter->finishData; // 成功的数据
-    }
 }
 ```

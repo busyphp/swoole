@@ -12,6 +12,7 @@ use BusyPHP\swoole\concerns\InteractsWithRpcClient;
 use BusyPHP\swoole\concerns\InteractsWithServer;
 use BusyPHP\swoole\concerns\InteractsWithSwooleTable;
 use BusyPHP\swoole\concerns\InteractsWithTcp;
+use BusyPHP\swoole\concerns\InteractsWithTimer;
 use BusyPHP\swoole\concerns\InteractsWithWebsocket;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
@@ -37,6 +38,7 @@ class Manager
     use InteractsWithRpcClient;
     use InteractsWithRpcServer;
     use InteractsWithQueue;
+    use InteractsWithTimer;
     use WithContainer;
     use WithApplication;
     
@@ -95,6 +97,7 @@ class Manager
         
         /**
          * 处理异步任务的结果，此回调函数在worker进程中执行
+         * @see InteractsWithServer::onFinish()
          */
         'finish',
         
@@ -135,6 +138,7 @@ class Manager
         $this->prepareRpcServer();
         $this->prepareTcpServer();
         $this->prepareQueue();
+        $this->prepareTimer();
         $this->prepareRpcClient();
     }
 }

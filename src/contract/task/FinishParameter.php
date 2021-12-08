@@ -1,13 +1,12 @@
 <?php
 
-namespace BusyPHP\swoole\task\parameter;
+namespace BusyPHP\swoole\contract\task;
 
 use BusyPHP\App;
-use BusyPHP\swoole\contract\task\TaskWorkerInterface;
 use Swoole\Server;
 
 /**
- * onFinish参数
+ * @see TaskInterface
  * @author busy^life <busy.life@qq.com>
  * @copyright (c) 2015--2019 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
  * @version $Id: 2020/11/11 下午10:03 上午 FinishParameter.php $
@@ -31,7 +30,7 @@ class FinishParameter
     public $originalData;
     
     /**
-     * 新数据，即 {@see TaskWorkerInterface::onTask()} 执行完成以后返回的数据，分三种情况:
+     * 新数据，即 {@see TaskInterface::onTaskRun()} 执行完成以后返回的数据，分三种情况:
      * - 异步任务：由{@see Task::finish()}返回;
      * - 同步等待任务：false 则任务执行超时。否则由 {@see Task::finish()} 返回;
      * - 同步等待并发任务：返回结果数组，结果的顺序与投递的数据相同，返回的结果数据中不包含超时的任务
@@ -40,10 +39,7 @@ class FinishParameter
     public $finishData;
     
     /**
-     * 任务或被指定的workerId，分三种情况:
-     * - 异步任务：返回执行任务的workerId
-     * - 同步等待任务：返回自定义指定的workerId
-     * - 同步等待并发任务：返回null
+     * 异步任务ID
      * @var int|null
      */
     public $taskId;

@@ -149,19 +149,12 @@ return [
         ],
     ],
     
-    // 非列队任务
-    // 会争抢数据，多进程处理
-    'task'       => [
+    // 定时器
+    'timer'      => [
         'enable'  => false,
         'workers' => [
-            // 任务类名，必须实现 \BusyPHP\swoole\contract\task\TaskWorkerInterface 接口
+            // 计时器类名，必须实现 \BusyPHP\swoole\contract\timer\TimerInterface 接口
         ]
-    ],
-    
-    // 协程
-    'coroutine'  => [
-        'enable' => true,
-        'flags'  => SWOOLE_HOOK_ALL,
     ],
     
     // 自定义 Swoole Table

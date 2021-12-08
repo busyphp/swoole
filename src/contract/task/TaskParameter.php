@@ -1,13 +1,13 @@
 <?php
 
-namespace BusyPHP\swoole\task\parameter;
+namespace BusyPHP\swoole\contract\task;
 
 use BusyPHP\App;
 use Swoole\Server;
 use Swoole\Server\Task;
 
 /**
- * onTask参数
+ * @see TaskInterface
  * @author busy^life <busy.life@qq.com>
  * @copyright (c) 2015--2019 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
  * @version $Id: 2020/11/11 下午10:03 上午 TaskParameter.php $

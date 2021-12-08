@@ -5,7 +5,6 @@ namespace BusyPHP\swoole;
 use BusyPHP\Request;
 use BusyPHP\Service as BaseService;
 use BusyPHP\swoole\app\controller\IndexController;
-use BusyPHP\swoole\command\Queue;
 use BusyPHP\swoole\command\Rpc;
 use BusyPHP\swoole\command\RpcInterface;
 use BusyPHP\swoole\command\Server as ServerCommand;
@@ -63,6 +62,6 @@ class Service extends \think\Service
             });
         }
         
-        $this->commands(ServerCommand::class, RpcInterface::class, Rpc::class, Queue::class);
+        $this->commands(ServerCommand::class, RpcInterface::class, Rpc::class);
     }
 }

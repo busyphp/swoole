@@ -4,8 +4,8 @@ namespace BusyPHP\swoole\task;
 
 use BusyPHP\App;
 use BusyPHP\exception\ClassNotImplementsException;
-use BusyPHP\swoole\contract\task\TaskWorkerInterface;
-use BusyPHP\swoole\task\parameter\TaskParameter;
+use BusyPHP\swoole\contract\task\TaskInterface;
+use BusyPHP\swoole\contract\task\TaskParameter;
 use Swoole\Server;
 use Swoole\Server\Task;
 
@@ -45,19 +45,14 @@ class Job
      * @param App    $app
      * @param Server $server
      * @param Task   $task
+     * @return mixed
      */
     public function run(App $app, Server $server, Task $task)
     {
-        if (!is_subclass_of($this->worker, TaskWorkerInterface::class)) {
-            throw new ClassNotImplementsException($this->worker, TaskWorkerInterface::class);
+        if (!is_subclass_of($this->worker, TaskInterface::class)) {
+            throw new ClassNotImplementsException($this->worker, TaskInterface::class);
         }
         
-        $result = call_user_func_array([
-            $this->worker,
-            'onTask'
-        ], [new TaskParameter($app, $server, $task, $this->data)]);
-        if ($result === true) {
-            $task->finish($this->data);
-        }
+        return $this->worker::onTaskRun(new TaskParameter($app, $server, $task, $this->data));
     }
 }

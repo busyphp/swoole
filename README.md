@@ -41,44 +41,9 @@ su -c "php think swoole start|stop|restart" -s /bin/sh www
 
 ## 队列服务
 
-单进程服务，不会出现数据争抢，适用于小批量数据队列处理
+### 队列说明
 
-### 队列配置
-
-#### 配置 `config/queue.php`
-```php
-<?php
-return [
-    // 队列驱动请配置database或redis
-    'default'     => 'database', 
-
-    'connections' => [
-        // 同步执行驱动，无实际意义，测试用
-        'sync'     => [
-            'type' => 'sync',
-        ],
-    
-        // 数据库驱动
-        'database' => [
-            // 任务重新入队后延迟执行的秒数，不设置默认为60秒
-            'retry_after' => 60,
-
-            // 更多选项请查看源文件
-        ],
-        
-        // Redis驱动
-        'redis'    => [
-            // 任务重新入队后延迟执行的秒数，不设置默认为60秒
-            'retry_after' => 60, 
-
-            // 更多选项请查看源文件
-        ],
-    ],
-
-    // 此处省略...
-];
-
-```
+参考：[https://github.com/busyphp/queue#readme](https://github.com/busyphp/queue#readme)
 
 #### 配置 `config/swoole.php`
 
@@ -93,17 +58,23 @@ return [
         'workers' => [
             // 队列名称 => [队列配置]
             'default' => [
-                // 启动后延迟多少秒执行
-                'delay'   => 0,
+                // 设置使用哪个队列连接器，默认依据 `config/queue.php` 中的 `default` 确定
+                'connection' => '',
                 
-                // 无任务休眠多少秒后继续查任务
-                'sleep'   => 3,
+                // 启动几个worker并行执行
+                'number'     => 1,
                 
-                // 任务失败最大重试次数
-                'tries'   => 3,
+                // 如果本次任务执行抛出异常且任务未被删除时，设置其下次执行前延迟多少秒
+                'delay'      => 0,
                 
-                // 任务最大执行时长秒数
-                'timeout' => 60,
+                // 如果队列中无任务，则多长时间后重新检查
+                'sleep'      => 3,
+                
+                // 如果任务已经超过尝试次数上限，0为不限，则触发当前任务类下的failed()方法
+                'tries'      => 0,
+                
+                // 进程的允许执行的最长时间，以秒为单位
+                'timeout'    => 60,
             ],
             
             // 更多队列配置
@@ -112,123 +83,6 @@ return [
 
     // 此处省略...
 ];
-```
-
-#### 创建任务类
-
-> 单任务类推荐实现 `\BusyPHP\swoole\contract\JobInterface` 接口类，以便编辑器辅助提示 <br />
-> 如果有多个小任务，就写多个方法，下面发布任务的时候会有区别
-
-##### 下面写两个例子
-
-```php
-<?php
-namespace app\job;
-
-use BusyPHP\swoole\contract\JobInterface;
-use think\queue\Job;
-
-class Job1 implements JobInterface
-{
-    /**
-     * 执行任务
-     * @param Job   $job 任务对象
-     * @param mixed $data 任务数据
-     */
-    public function fire(Job $job, $data) : void
-    {
-        // 这里执行具体的任务....
-    
-        // 通过这个方法可以检查这个任务已经重试了几次了
-        if ($job->attempts() > 3) {
-            // ...
-        }
-    
-        //如果任务执行成功后 记得删除任务，不然这个任务会重复执行，直到达到最大重试次数后失败后，执行failed方法
-        $job->delete();
-    
-        // 也可以重新发布这个任务
-        $job->release($delay); //$delay为延迟时间(秒)
-    }
-    
-    
-    /**
-     * 执行任务达到最大重试次数后失败
-     * @param mixed $data 发布任务时自定义的数据
-     */
-    public function failed($data) : void
-    {
-    }
-}
-```
-
-```php
-<?php
-namespace app\job;
-
-use think\queue\Job;
-
-class Job1 
-{
-    /**
-     * 执行任务
-     * @param Job   $job 任务对象
-     * @param mixed $data 任务数据
-     */
-    public function task1(Job $job, $data) : void
-    {
-        // 这里执行 task1 具体的任务....
-    }
-    
-    /**
-     * 执行任务
-     * @param Job   $job 任务对象
-     * @param mixed $data 任务数据
-     */
-    public function task2(Job $job, $data) : void
-    {
-        // 这里执行 task2 具体的任务....
-    }
-    
-    /**
-     * 执行任务
-     * @param Job   $job 任务对象
-     * @param mixed $data 任务数据
-     */
-    public function task3(Job $job, $data) : void
-    {
-        // 这里执行 task3 具体的任务....
-    }
-        
-    /**
-     * 执行任务达到最大重试次数后失败
-     * @param mixed $data 发布任务时自定义的数据
-     */
-    public function failed($data) : void
-    {
-    }
-}
-```
-
-#### 发布任务
-
-##### 立即执行
-
-```php
-<?php
-/**
- * @params string $job 任务名
- * @params mixed $data 你要传到任务里的参数
- * @params string|null $queue 队列名，指定这个任务是在哪个队列上执行，同下面监控队列的时候指定的队列名,可不填，默认为 default
- */
-\think\facade\Queue::push($job, $data = '', $queue = null);
-
-// $job 多个小任务写法
-// $job 是任务名
-// 单模块的，且命名空间是app\job的，比如上面的例子一,写Job1类名即可
-// 多模块的，且命名空间是app\module\job的，写model/Job1即可
-// 其他的需要些完整的类名，比如上面的例子二，需要写完整的类名app\lib\job\Job2
-// 如果一个任务类里有多个小任务的话，如上面的例子二，需要用@+方法名app\lib\job\Job2@task1、app\lib\job\Job2@task2
 ```
 
 ## 定时任务服务

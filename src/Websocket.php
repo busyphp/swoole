@@ -228,7 +228,7 @@ class Websocket
     {
         $groups = is_string($groups) || is_int($groups) ? func_get_args() : $groups;
         
-        $this->room->add($this->getSender(), $groups);
+        $this->room->bind($this->getSender(), $groups);
     }
     
     
@@ -243,7 +243,7 @@ class Websocket
             $clients[$i] = $this->clientName($room);
         }
         
-        $this->room->add($this->getSender(), $clients);
+        $this->room->bind($this->getSender(), $clients);
     }
     
     
@@ -258,7 +258,7 @@ class Websocket
             $rooms[$i] = $this->roomName($room);
         }
         
-        $this->room->add($this->getSender(), $rooms);
+        $this->room->bind($this->getSender(), $rooms);
     }
     
     
@@ -271,7 +271,7 @@ class Websocket
     {
         $groups = is_string($groups) || is_int($groups) ? func_get_args() : $groups;
         
-        $this->room->delete($this->getSender(), $groups);
+        $this->room->unbind($this->getSender(), $groups);
         
         return $this;
     }
@@ -289,7 +289,7 @@ class Websocket
             $clients[$i] = $this->clientName($group);
         }
         
-        $this->room->delete($this->getSender(), $clients);
+        $this->room->unbind($this->getSender(), $clients);
         
         return $this;
     }
@@ -307,7 +307,7 @@ class Websocket
             $rooms[$i] = $this->roomName($group);
         }
         
-        $this->room->delete($this->getSender(), $rooms);
+        $this->room->unbind($this->getSender(), $rooms);
         
         return $this;
     }
@@ -463,7 +463,7 @@ class Websocket
         $rooms = array_diff($to, $fds);
         
         foreach ($rooms as $room) {
-            $clients = $this->room->getClients($room);
+            $clients = $this->room->getFdsByRoom($room);
             // fallback fd with wrong type back to fds array
             if (empty($clients) && is_numeric($room)) {
                 $fds[] = $room;

@@ -11,62 +11,57 @@ namespace BusyPHP\swoole\contract\websocket;
 interface WebsocketRoomInterface
 {
     /**
-     * Rooms key
-     *
-     * @const string
+     * 房间键
+     * - 房间A => [fd1, fd2, fd3, ....]
+     * - 房间B => [fd1, fd2, fd3, ....]
+     * @var string
      */
     public const ROOMS_KEY = 'rooms';
     
     /**
-     * Descriptors key
-     *
-     * @const string
+     * FD关系键
+     * - FD1 => [房间A, 房间B, 房间C, ....]
+     * - FD2 => [房间A, 房间B, 房间C, ....]
+     * @var string
      */
     public const DESCRIPTORS_KEY = 'fds';
     
     
     /**
-     * Do some init stuffs before workers started.
-     *
+     * 在驱动开始工作前做一些初始工作
      * @return WebsocketRoomInterface
      */
     public function prepare() : WebsocketRoomInterface;
     
     
     /**
-     * Add multiple socket fds to a room.
-     *
-     * @param int fd
-     * @param array|string rooms
+     * 将FD和房间进行关系绑定
+     * @param int          $fd FD
+     * @param array|string $rooms 房间名称
      */
-    public function add(int $fd, $rooms);
+    public function bind(int $fd, $rooms);
     
     
     /**
-     * Delete multiple socket fds from a room.
-     *
-     * @param int fd
-     * @param array|string rooms
+     * 删除FD和房间的绑定关系
+     * @param int          $fd FD
+     * @param array|string $rooms 房间名称
      */
-    public function delete(int $fd, $rooms);
+    public function unbind(int $fd, $rooms);
     
     
     /**
-     * Get all sockets by a room key.
-     *
-     * @param string room
-     *
+     * 通过房间名获取所有加入该房间的FD
+     * @param string $room 房间名
      * @return array
      */
-    public function getClients(string $room);
+    public function getFdsByRoom(string $room) : array;
     
     
     /**
-     * Get all rooms by a fd.
-     *
-     * @param int fd
-     *
+     * 通过FD获取该FD加入的所有房间
+     * @param int $fd FD
      * @return array
      */
-    public function getRooms(int $fd);
+    public function getRoomsByFd(int $fd) : array;
 }

@@ -1,9 +1,12 @@
 <?php
+declare(strict_types = 1);
 
 namespace BusyPHP\swoole\websocket\room;
 
+use Closure;
 use InvalidArgumentException;
 use Redis as PHPRedis;
+use Smf\ConnectionPool\BorrowConnectionTimeoutException;
 use Smf\ConnectionPool\ConnectionPool;
 use Smf\ConnectionPool\Connectors\PhpRedisConnector;
 use think\helper\Arr;
@@ -12,7 +15,10 @@ use BusyPHP\swoole\Manager;
 use BusyPHP\swoole\Pool;
 
 /**
- * Class RedisRoom
+ * Redis房间驱动
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/21 下午2:10 Redis.php $
  */
 class Redis implements WebsocketRoomInterface
 {
@@ -22,20 +28,24 @@ class Redis implements WebsocketRoomInterface
     protected $config;
     
     /**
+     * redis前缀
      * @var string
      */
     protected $prefix = 'swoole:';
     
-    /** @var Manager */
+    /**
+     * @var Manager
+     */
     protected $manager;
     
-    /** @var ConnectionPool */
+    /**
+     * @var ConnectionPool
+     */
     protected $pool;
     
     
     /**
      * RedisRoom constructor.
-     *
      * @param Manager $manager
      * @param array   $config
      */
@@ -51,52 +61,42 @@ class Redis implements WebsocketRoomInterface
     
     
     /**
+     * 准备Redis
      * @return WebsocketRoomInterface
      */
     public function prepare() : WebsocketRoomInterface
     {
-        $this->initData();
-        $this->prepareRedis();
-        
-        return $this;
-    }
-    
-    
-    protected function prepareRedis()
-    {
-        $this->manager->onEvent('workerStart', function() {
-            $config     = $this->config;
-            $this->pool = new ConnectionPool(Pool::pullPoolConfig($config), new PhpRedisConnector(), $config);
-            $this->manager->getPools()->add("websocket.room", $this->pool);
-        });
-    }
-    
-    
-    protected function initData()
-    {
-        $connector = new PhpRedisConnector();
-        
+        // 初始化Redis
+        $connector  = new PhpRedisConnector();
         $connection = $connector->connect($this->config);
-        
         if (count($keys = $connection->keys("{$this->prefix}*"))) {
             $connection->del($keys);
         }
         
         $connector->disconnect($connection);
+        
+        // 启动驱动
+        $this->manager->onEvent('workerStart', function() {
+            $config     = $this->config;
+            $this->pool = new ConnectionPool(Pool::pullPoolConfig($config), new PhpRedisConnector(), $config);
+            $this->manager->getPools()->add("websocket.room", $this->pool);
+        });
+        
+        return $this;
     }
     
     
     /**
-     * Add multiple socket fds to a room.
-     *
-     * @param int fd
-     * @param array|string rooms
+     * 将FD和房间进行关系绑定
+     * @param int          $fd FD
+     * @param array|string $rooms 房间名称
+     * @throws BorrowConnectionTimeoutException
      */
-    public function add(int $fd, $rooms)
+    public function bind(int $fd, $rooms)
     {
         $rooms = is_array($rooms) ? $rooms : [$rooms];
         
-        $this->addValue($fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
+        $this->addValue((string) $fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
         
         foreach ($rooms as $room) {
             $this->addValue($room, [$fd], WebsocketRoomInterface::ROOMS_KEY);
@@ -105,17 +105,17 @@ class Redis implements WebsocketRoomInterface
     
     
     /**
-     * Delete multiple socket fds from a room.
-     *
-     * @param int fd
-     * @param array|string rooms
+     * 删除FD和房间的绑定关系
+     * @param int          $fd FD
+     * @param array|string $rooms 房间名称
+     * @throws BorrowConnectionTimeoutException
      */
-    public function delete(int $fd, $rooms)
+    public function unbind(int $fd, $rooms)
     {
         $rooms = is_array($rooms) ? $rooms : [$rooms];
-        $rooms = count($rooms) ? $rooms : $this->getRooms($fd);
+        $rooms = count($rooms) ? $rooms : $this->getRoomsByFd($fd);
         
-        $this->removeValue($fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
+        $this->removeValue((string) $fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
         
         foreach ($rooms as $room) {
             $this->removeValue($room, [$fd], WebsocketRoomInterface::ROOMS_KEY);
@@ -123,7 +123,36 @@ class Redis implements WebsocketRoomInterface
     }
     
     
-    protected function runWithRedis(\Closure $callable)
+    /**
+     * 通过房间名获取所有加入该房间的FD
+     * @param string $room 房间名
+     * @return array
+     * @throws BorrowConnectionTimeoutException
+     */
+    public function getFdsByRoom(string $room) : array
+    {
+        return $this->getValue($room, WebsocketRoomInterface::ROOMS_KEY) ?? [];
+    }
+    
+    
+    /**
+     * 通过FD获取该FD加入的所有房间
+     * @param int $fd FD
+     * @return array
+     * @throws BorrowConnectionTimeoutException
+     */
+    public function getRoomsByFd(int $fd) : array
+    {
+        return $this->getValue((string) $fd, WebsocketRoomInterface::DESCRIPTORS_KEY) ?? [];
+    }
+    
+    
+    /**
+     * @param Closure $callable
+     * @return mixed
+     * @throws BorrowConnectionTimeoutException
+     */
+    protected function runWithRedis(Closure $callable)
     {
         $redis = $this->pool->borrow();
         try {
@@ -135,15 +164,14 @@ class Redis implements WebsocketRoomInterface
     
     
     /**
-     * Add value to redis.
-     *
+     * 添加值
      * @param        $key
      * @param array  $values
      * @param string $table
-     *
      * @return $this
+     * @throws BorrowConnectionTimeoutException
      */
-    protected function addValue($key, array $values, string $table)
+    protected function addValue(string $key, array $values, string $table)
     {
         $this->checkTable($table);
         $redisKey = $this->getKey($key, $table);
@@ -163,15 +191,14 @@ class Redis implements WebsocketRoomInterface
     
     
     /**
-     * Remove value from redis.
-     *
-     * @param        $key
+     * 删除值
+     * @param string $key
      * @param array  $values
      * @param string $table
-     *
      * @return $this
+     * @throws BorrowConnectionTimeoutException
      */
-    protected function removeValue($key, array $values, string $table)
+    protected function removeValue(string $key, array $values, string $table)
     {
         $this->checkTable($table);
         $redisKey = $this->getKey($key, $table);
@@ -189,34 +216,7 @@ class Redis implements WebsocketRoomInterface
     
     
     /**
-     * Get all sockets by a room key.
-     *
-     * @param string room
-     *
-     * @return array
-     */
-    public function getClients(string $room)
-    {
-        return $this->getValue($room, WebsocketRoomInterface::ROOMS_KEY) ?? [];
-    }
-    
-    
-    /**
-     * Get all rooms by a fd.
-     *
-     * @param int fd
-     *
-     * @return array
-     */
-    public function getRooms(int $fd)
-    {
-        return $this->getValue($fd, WebsocketRoomInterface::DESCRIPTORS_KEY) ?? [];
-    }
-    
-    
-    /**
-     * Check table for rooms and descriptors.
-     *
+     * 检测
      * @param string $table
      */
     protected function checkTable(string $table)
@@ -228,12 +228,11 @@ class Redis implements WebsocketRoomInterface
     
     
     /**
-     * Get value.
-     *
+     * 获取值
      * @param string $key
      * @param string $table
-     *
      * @return array
+     * @throws BorrowConnectionTimeoutException
      */
     protected function getValue(string $key, string $table)
     {
@@ -246,14 +245,12 @@ class Redis implements WebsocketRoomInterface
     
     
     /**
-     * Get key.
-     *
+     * 生成KEY
      * @param string $key
      * @param string $table
-     *
      * @return string
      */
-    protected function getKey(string $key, string $table)
+    protected function getKey(string $key, string $table) : string
     {
         return "{$this->prefix}{$table}:{$key}";
     }

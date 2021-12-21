@@ -1,4 +1,5 @@
 <?php
+declare(strict_types = 1);
 
 namespace BusyPHP\swoole\websocket\room;
 
@@ -6,6 +7,12 @@ use InvalidArgumentException;
 use Swoole\Table as SwooleTable;
 use BusyPHP\swoole\contract\websocket\WebsocketRoomInterface;
 
+/**
+ * Swoole Table 房间驱动
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2021/12/21 下午2:38 Table.php $
+ */
 class Table implements WebsocketRoomInterface
 {
     /**
@@ -31,7 +38,6 @@ class Table implements WebsocketRoomInterface
     
     /**
      * TableRoom constructor.
-     *
      * @param array $config
      */
     public function __construct(array $config)
@@ -41,32 +47,37 @@ class Table implements WebsocketRoomInterface
     
     
     /**
-     * Do some init stuffs before workers started.
-     *
+     * 初始化SwooleTable
      * @return WebsocketRoomInterface
      */
     public function prepare() : WebsocketRoomInterface
     {
-        $this->initRoomsTable();
-        $this->initFdsTable();
+        // 初始化 房间 => [fd] 关系表
+        $this->rooms = new SwooleTable($this->config['room_rows']);
+        $this->rooms->column('value', SwooleTable::TYPE_STRING, $this->config['room_size']);
+        $this->rooms->create();
+        
+        // 初始化 fd => [房间] 关系表
+        $this->fds = new SwooleTable($this->config['client_rows']);
+        $this->fds->column('value', SwooleTable::TYPE_STRING, $this->config['client_size']);
+        $this->fds->create();
         
         return $this;
     }
     
     
     /**
-     * Add multiple socket fds to a room.
-     *
-     * @param int fd
-     * @param array|string rooms
+     * 将FD和房间进行关系绑定
+     * @param int          $fd FD
+     * @param array|string $rooms 房间名称
      */
-    public function add(int $fd, $roomNames)
+    public function bind(int $fd, $rooms)
     {
-        $rooms     = $this->getRooms($fd);
-        $roomNames = is_array($roomNames) ? $roomNames : [$roomNames];
+        $rooms = $this->getRoomsByFd($fd);
+        $rooms = is_array($rooms) ? $rooms : [$rooms];
         
-        foreach ($roomNames as $room) {
-            $fds = $this->getClients($room);
+        foreach ($rooms as $room) {
+            $fds = $this->getFdsByRoom($room);
             
             if (in_array($fd, $fds)) {
                 continue;
@@ -75,126 +86,97 @@ class Table implements WebsocketRoomInterface
             $fds[]   = $fd;
             $rooms[] = $room;
             
-            $this->setClients($room, $fds);
+            $this->setRoomFds($room, $fds);
         }
         
-        $this->setRooms($fd, $rooms);
+        $this->setFdRooms($fd, $rooms);
     }
     
     
     /**
-     * Delete multiple socket fds from a room.
-     *
-     * @param int fd
-     * @param array|string rooms
+     * 删除FD和房间的绑定关系
+     * @param int          $fd FD
+     * @param array|string $rooms 房间名称
      */
-    public function delete(int $fd, $roomNames = [])
+    public function unbind(int $fd, $rooms)
     {
-        $allRooms  = $this->getRooms($fd);
-        $roomNames = is_array($roomNames) ? $roomNames : [$roomNames];
-        $rooms     = count($roomNames) ? $roomNames : $allRooms;
+        $allRooms = $this->getRoomsByFd($fd);
+        $rooms    = is_array($rooms) ? $rooms : [$rooms];
+        $rooms    = count($rooms) ? $rooms : $allRooms;
         
         $removeRooms = [];
         foreach ($rooms as $room) {
-            $fds = $this->getClients($room);
+            $fds = $this->getFdsByRoom($room);
             
             if (!in_array($fd, $fds)) {
                 continue;
             }
             
-            $this->setClients($room, array_values(array_diff($fds, [$fd])));
+            $this->setRoomFds($room, array_values(array_diff($fds, [$fd])));
             $removeRooms[] = $room;
         }
         
-        $this->setRooms($fd, collect($allRooms)->diff($removeRooms)->values()->toArray());
+        $this->setFdRooms($fd, collect($allRooms)->diff($removeRooms)->values()->toArray());
     }
     
     
     /**
-     * Get all sockets by a room key.
-     *
-     * @param string room
-     *
+     * 通过房间名获取所有加入该房间的FD
+     * @param string $room 房间名
      * @return array
      */
-    public function getClients(string $room)
+    public function getFdsByRoom(string $room) : array
     {
         return $this->getValue($room, WebsocketRoomInterface::ROOMS_KEY) ?? [];
     }
     
     
     /**
-     * Get all rooms by a fd.
-     *
-     * @param int fd
-     *
+     * 通过FD获取该FD加入的所有房间
+     * @param int $fd FD
      * @return array
      */
-    public function getRooms(int $fd)
+    public function getRoomsByFd(int $fd) : array
     {
-        return $this->getValue($fd, WebsocketRoomInterface::DESCRIPTORS_KEY) ?? [];
+        return $this->getValue((string) $fd, WebsocketRoomInterface::DESCRIPTORS_KEY) ?? [];
     }
     
     
     /**
-     * @param string $room
-     * @param array  $fds
-     *
+     * 向房间中设置FD
+     * @param string $room 房间名
+     * @param array  $fds FD
      * @return $this
      */
-    protected function setClients(string $room, array $fds)
+    protected function setRoomFds(string $room, array $fds)
     {
         return $this->setValue($room, $fds, WebsocketRoomInterface::ROOMS_KEY);
     }
     
     
     /**
-     * @param int   $fd
-     * @param array $rooms
+     * 向FD中设置房间
+     * @param int   $fd FD
+     * @param array $rooms 房间名
+     * @return $this
+     */
+    protected function setFdRooms(int $fd, array $rooms)
+    {
+        return $this->setValue((string) $fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
+    }
+    
+    
+    /**
+     * 设置值到表中
+     * @param string $key 键名称
+     * @param array  $value 值
+     * @param string $table 表名称
      *
      * @return $this
      */
-    protected function setRooms(int $fd, array $rooms)
-    {
-        return $this->setValue($fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
-    }
-    
-    
-    /**
-     * Init rooms table
-     */
-    protected function initRoomsTable() : void
-    {
-        $this->rooms = new SwooleTable($this->config['room_rows']);
-        $this->rooms->column('value', SwooleTable::TYPE_STRING, $this->config['room_size']);
-        $this->rooms->create();
-    }
-    
-    
-    /**
-     * Init descriptors table
-     */
-    protected function initFdsTable()
-    {
-        $this->fds = new SwooleTable($this->config['client_rows']);
-        $this->fds->column('value', SwooleTable::TYPE_STRING, $this->config['client_size']);
-        $this->fds->create();
-    }
-    
-    
-    /**
-     * Set value to table
-     *
-     * @param        $key
-     * @param array  $value
-     * @param string $table
-     *
-     * @return $this
-     */
-    public function setValue($key, array $value, string $table)
+    public function setValue(string $key, array $value, string $table)
     {
         $this->checkTable($table);
-        
         $this->$table->set($key, ['value' => json_encode($value)]);
         
         return $this;
@@ -202,17 +184,14 @@ class Table implements WebsocketRoomInterface
     
     
     /**
-     * Get value from table
-     *
-     * @param string $key
-     * @param string $table
-     *
+     * 在表中获取值
+     * @param string $key 键名称
+     * @param string $table 表名称
      * @return array|mixed
      */
     public function getValue(string $key, string $table)
     {
         $this->checkTable($table);
-        
         $value = $this->$table->get($key);
         
         return $value ? json_decode($value['value'], true) : [];
@@ -220,8 +199,7 @@ class Table implements WebsocketRoomInterface
     
     
     /**
-     * Check table for exists
-     *
+     * 检测表是否存在
      * @param string $table
      */
     protected function checkTable(string $table)

@@ -3,6 +3,7 @@
 namespace BusyPHP\swoole\concerns;
 
 use BusyPHP\swoole\App;
+use BusyPHP\swoole\event\HttpRequestEvent;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Status;
@@ -38,10 +39,13 @@ trait InteractsWithHttp
     {
         $this->waitCoordinator('workerStart');
         
-        $args = func_get_args();
-        $this->runInSandbox(function(Http $http, Event $event, App $app, Middleware $middleware) use ($args, $req, $res) {
+        $this->runInSandbox(function(Http $http, Event $event, App $app, Middleware $middleware) use ($req, $res) {
             $app->setInConsole(false);
-            $event->trigger('swoole.request', $args);
+            
+            $httpEvent           = new HttpRequestEvent();
+            $httpEvent->request  = $req;
+            $httpEvent->response = $res;
+            $event->trigger($httpEvent);
             
             //兼容var-dumper
             if (class_exists(VarDumper::class)) {

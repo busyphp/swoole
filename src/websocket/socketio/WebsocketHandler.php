@@ -3,6 +3,12 @@
 namespace BusyPHP\swoole\websocket\socketio;
 
 use BusyPHP\Request;
+use BusyPHP\swoole\event\WebsocketCloseEvent;
+use BusyPHP\swoole\event\WebsocketConnectEvent;
+use BusyPHP\swoole\event\WebsocketDisconnectEvent;
+use BusyPHP\swoole\event\WebSocketMessageEvent;
+use BusyPHP\swoole\event\WebSocketOpenEvent;
+use BusyPHP\swoole\event\WebsocketUserEvent;
 use Exception;
 use Swoole\Timer;
 use Swoole\Websocket\Frame;
@@ -37,11 +43,14 @@ class WebsocketHandler extends Websocket
         
         $this->push(EnginePacket::open($payload));
         
-        $this->event->trigger('swoole.websocket.open', [$fd, $request]);
+        $event          = new WebSocketOpenEvent();
+        $event->fd      = $fd;
+        $event->request = $request;
+        $this->event->trigger($event);
         
         if ($this->eio < 4) {
             $this->resetPingTimeout($this->pingInterval + $this->pingTimeout);
-            $this->onConnect();
+            $this->onConnect($fd);
         } else {
             $this->schedulePing();
         }
@@ -56,7 +65,10 @@ class WebsocketHandler extends Websocket
     {
         $enginePacket = EnginePacket::fromString($frame->data);
         
-        $this->event->trigger('swoole.websocket.message', $enginePacket);
+        $event         = new WebSocketMessageEvent();
+        $event->frame  = $event;
+        $event->packet = $enginePacket;
+        $this->event->trigger($event);
         
         $this->resetPingTimeout($this->pingInterval + $this->pingTimeout);
         
@@ -65,12 +77,17 @@ class WebsocketHandler extends Websocket
                 $packet = $this->decode($enginePacket->data);
                 switch ($packet->type) {
                     case Packet::CONNECT:
-                        $this->onConnect($packet->data);
+                        $this->onConnect($frame->fd, $packet->data);
                     break;
                     case Packet::EVENT:
-                        $type   = array_shift($packet->data);
-                        $data   = $packet->data;
-                        $result = $this->event->trigger('swoole.websocket.event', [$frame, ['type' => $type, 'data' => $data]]);
+                        $type = array_shift($packet->data);
+                        $data = $packet->data;
+                        
+                        $event        = new WebsocketUserEvent();
+                        $event->frame = $frame;
+                        $event->type  = $type;
+                        $event->data  = $data;
+                        $result       = $this->event->trigger($event);
                         
                         if ($packet->id !== null) {
                             $responsePacket = Packet::create(Packet::ACK, [
@@ -83,7 +100,10 @@ class WebsocketHandler extends Websocket
                         }
                     break;
                     case Packet::DISCONNECT:
-                        $this->event->trigger('swoole.websocket.disconnect');
+                        
+                        $event        = new WebsocketDisconnectEvent();
+                        $event->frame = $frame;
+                        $this->event->trigger($event);
                         $this->close();
                     break;
                     default:
@@ -113,14 +133,22 @@ class WebsocketHandler extends Websocket
     {
         Timer::clear($this->pingTimeoutTimer);
         Timer::clear($this->pingIntervalTimer);
-        $this->event->trigger('swoole.websocket.close', [$fd, $reactorId]);
+        
+        $event            = new WebsocketCloseEvent();
+        $event->fd        = $fd;
+        $event->reactorId = $reactorId;
+        $this->event->trigger($event);
     }
     
     
-    protected function onConnect($data = null)
+    protected function onConnect(int $fd, $data = null)
     {
         try {
-            $this->event->trigger('swoole.websocket.connect', $data);
+            $event       = new WebsocketConnectEvent();
+            $event->fd   = $fd;
+            $event->data = $data;
+            $this->event->trigger($event);
+            
             $packet = Packet::create(Packet::CONNECT);
             if ($this->eio >= 4) {
                 $packet->data = ['sid' => base64_encode(uniqid())];

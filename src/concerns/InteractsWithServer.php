@@ -6,6 +6,7 @@ use BusyPHP\App;
 use BusyPHP\exception\ClassNotImplementsException;
 use BusyPHP\helper\ArrayHelper;
 use BusyPHP\swoole\contract\task\TaskInterface;
+use BusyPHP\swoole\event\TaskEvent;
 use BusyPHP\swoole\Job;
 use BusyPHP\swoole\task\Job as TaskJob;
 use BusyPHP\swoole\contract\task\FinishParameter;
@@ -115,7 +116,11 @@ trait InteractsWithServer
             } elseif ($task->data instanceof TaskJob) {
                 return $task->data->run($app, $server, $task);
             } else {
-                return $event->trigger('swoole.task', $task);
+                $taskEvent         = new TaskEvent();
+                $taskEvent->task   = $task;
+                $taskEvent->server = $server;
+                
+                return $event->trigger($taskEvent);
             }
         });
     }

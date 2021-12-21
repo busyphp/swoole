@@ -47,7 +47,7 @@ interface WebsocketRoomInterface
      * @param int          $fd FD
      * @param array|string $rooms 房间名称
      */
-    public function unbind(int $fd, $rooms);
+    public function unbind(int $fd, $rooms = []);
     
     
     /**

@@ -110,7 +110,7 @@ class Redis implements WebsocketRoomInterface
      * @param array|string $rooms 房间名称
      * @throws BorrowConnectionTimeoutException
      */
-    public function unbind(int $fd, $rooms)
+    public function unbind(int $fd, $rooms = [])
     {
         $rooms = is_array($rooms) ? $rooms : [$rooms];
         $rooms = count($rooms) ? $rooms : $this->getRoomsByFd($fd);

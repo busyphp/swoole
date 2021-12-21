@@ -3,9 +3,13 @@
 namespace BusyPHP\swoole;
 
 use BusyPHP\Request;
-use Swoole\Server;
+use BusyPHP\swoole\event\WebsocketCloseEvent;
+use BusyPHP\swoole\event\WebSocketMessageEvent;
+use BusyPHP\swoole\event\WebSocketOpenEvent;
+use BusyPHP\swoole\event\WebsocketUserEvent;
 use Swoole\Timer;
 use Swoole\WebSocket\Frame;
+use Swoole\Server;
 use think\Event;
 use BusyPHP\swoole\websocket\Pusher;
 use BusyPHP\swoole\websocket\Room;
@@ -34,13 +38,13 @@ class Websocket
     protected $room;
     
     /**
-     * 发送者客户端ID(fd)
+     * 发送者FD连接标识符
      * @var int
      */
     protected $sender;
     
     /**
-     * 接收者fd或房间名称
+     * 接收者FD连接标识符或房间名称
      * @var array
      */
     protected $to = [];
@@ -80,6 +84,18 @@ class Websocket
      */
     protected $pingTimeout;
     
+    /**
+     * 分组前缀
+     * @var string
+     */
+    public $groupPrefix = 'g';
+    
+    /**
+     * UID前缀
+     * @var string
+     */
+    public $uidPrefix = 'u';
+    
     
     /**
      * Websocket constructor.
@@ -102,34 +118,48 @@ class Websocket
     
     /**
      * 客户端已连接监听
-     * @param int     $fd
-     * @param Request $request
+     * @param int     $fd FD连接标识符
+     * @param Request $request 请求
      */
     public function onOpen(int $fd, Request $request) : void
     {
-        $this->event->trigger('swoole.websocket.open', [$fd, $request]);
+        $event          = new WebSocketOpenEvent();
+        $event->fd      = $fd;
+        $event->request = $request;
+        $this->event->trigger($event);
     }
     
     
     /**
      * 收到消息监听
-     * @param Frame $frame
+     * @param Frame $frame 数据帧
      */
     public function onMessage(Frame $frame) : void
     {
-        $this->event->trigger('swoole.websocket.message', $frame);
-        $this->event->trigger('swoole.websocket.event', [$frame, $this->decode($frame->data)]);
+        $event        = new WebSocketMessageEvent();
+        $event->frame = $frame;
+        $this->event->trigger($event);
+        
+        $data         = $this->decode($frame->data);
+        $event        = new WebsocketUserEvent();
+        $event->frame = $frame;
+        $event->data  = $data['data'] ?? null;
+        $event->type  = $data['type'] ?? null;
+        $this->event->trigger($event);
     }
     
     
     /**
      * 连接被关闭监听
-     * @param int $fd 客户端ID
+     * @param int $fd FD连接标识符
      * @param int $reactorId 来自哪个 reactor 线程，主动 close 关闭时为负数
      */
     public function onClose(int $fd, $reactorId) : void
     {
-        $this->event->trigger('swoole.websocket.close', [$fd, $reactorId]);
+        $event            = new WebsocketCloseEvent();
+        $event->fd        = $fd;
+        $event->reactorId = $reactorId;
+        $this->event->trigger($event);
     }
     
     
@@ -161,6 +191,9 @@ class Websocket
     public function to($values) : self
     {
         $values = is_string($values) || is_int($values) ? func_get_args() : $values;
+        if (!$values) {
+            return $this;
+        }
         
         foreach ($values as $value) {
             if (!in_array($value, $this->to)) {
@@ -173,15 +206,19 @@ class Websocket
     
     
     /**
-     * 设置要发送的客户端名称
-     * @param int|string|array $clients
+     * 设置要发送的UID
+     * @param int|string|array $uids UID
      * @return $this
      */
-    public function toClient($clients) : self
+    public function toUid($uids) : self
     {
-        $clients = is_string($clients) || is_int($clients) ? func_get_args() : $clients;
-        foreach ($clients as $value) {
-            $value = $this->clientName($value);
+        $uids = is_string($uids) || is_int($uids) ? func_get_args() : $uids;
+        if (!$uids) {
+            return $this;
+        }
+        
+        foreach ($uids as $value) {
+            $value = $this->encodeUid($value);
             if (!in_array($value, $this->to)) {
                 $this->to[] = $value;
             }
@@ -192,15 +229,19 @@ class Websocket
     
     
     /**
-     * 设置要发送的房间名称
-     * @param int|string|array $rooms
+     * 设置要发送的分组名称
+     * @param int|string|array $groups 分组名称
      * @return $this
      */
-    public function toRoom($rooms) : self
+    public function toGroup($groups) : self
     {
-        $rooms = is_string($rooms) || is_int($rooms) ? func_get_args() : $rooms;
-        foreach ($rooms as $value) {
-            $value = $this->roomName($value);
+        $groups = is_string($groups) || is_int($groups) ? func_get_args() : $groups;
+        if (!$groups) {
+            return $this;
+        }
+        
+        foreach ($groups as $value) {
+            $value = $this->encodeGroup($value);
             if (!in_array($value, $this->to)) {
                 $this->to[] = $value;
             }
@@ -211,7 +252,7 @@ class Websocket
     
     
     /**
-     * 获取要发送的客户端ID(fd)或房间名称
+     * 获取要发送的FD连接标识符或房间名称
      * @return array
      */
     public function getTo() : array
@@ -221,95 +262,286 @@ class Websocket
     
     
     /**
-     * 将发送者加入到分组
-     * @param string|int|array $groups 分组名称
-     */
-    public function join($groups)
-    {
-        $groups = is_string($groups) || is_int($groups) ? func_get_args() : $groups;
-        
-        $this->room->bind($this->getSender(), $groups);
-    }
-    
-    
-    /**
-     * 将发送者加入到客户端
-     * @param string|int|array $clients 客户端名称
-     */
-    public function joinClient($clients)
-    {
-        $clients = is_string($clients) || is_int($clients) ? func_get_args() : $clients;
-        foreach ($clients as $i => $room) {
-            $clients[$i] = $this->clientName($room);
-        }
-        
-        $this->room->bind($this->getSender(), $clients);
-    }
-    
-    
-    /**
-     * 加发送者加入到房间
+     * 将当前连接FD标识符加入房间
      * @param string|int|array $rooms 房间名称
      */
-    public function joinRoom($rooms)
+    public function join($rooms)
     {
-        $rooms = is_string($rooms) || is_int($rooms) ? func_get_args() : $rooms;
-        foreach ($rooms as $i => $room) {
-            $rooms[$i] = $this->roomName($room);
-        }
-        
-        $this->room->bind($this->getSender(), $rooms);
+        $this->room->bind($this->getSender(), is_string($rooms) || is_int($rooms) ? func_get_args() : $rooms);
     }
     
     
     /**
-     * 设置发送者离开分组
-     * @param array|string|integer $groups 分组名称
+     * 将当前连接FD标识符离开房间
+     * @param array|string|integer $rooms 房间名称，空则退出所有房间
      * @return $this
      */
-    public function leave($groups = []) : self
+    public function leave($rooms = [])
     {
-        $groups = is_string($groups) || is_int($groups) ? func_get_args() : $groups;
-        
-        $this->room->unbind($this->getSender(), $groups);
+        $this->room->unbind($this->getSender(), is_string($rooms) || is_int($rooms) ? func_get_args() : $rooms);
         
         return $this;
     }
     
     
     /**
-     * 设置发送者离开客户端
-     * @param array|int|string $clients 客户端名称
-     * @return $this
+     * 将当前连接FD标识符与用户ID绑定
+     * @param string|int $uid 用户ID
      */
-    public function leaveClient($clients = []) : self
+    public function bindUid($uid)
     {
-        $clients = is_string($clients) || is_int($clients) ? func_get_args() : $clients;
-        foreach ($clients as $i => $group) {
-            $clients[$i] = $this->clientName($group);
+        if (!$uid) {
+            return;
         }
         
-        $this->room->unbind($this->getSender(), $clients);
-        
-        return $this;
+        $this->room->bind($this->getSender(), $this->encodeUid($uid));
     }
     
     
     /**
-     * 设置发送者离开房间
-     * @param array|int|string $rooms 房间名称
-     * @return $this
+     * 将当前连接FD标识符与用户ID解除绑定
+     * @param int|string $uid 用户ID
      */
-    public function leaveRoom($rooms = []) : self
+    public function unbindUid($uid)
     {
-        $rooms = is_string($rooms) || is_int($rooms) ? func_get_args() : $rooms;
-        foreach ($rooms as $i => $group) {
-            $rooms[$i] = $this->roomName($group);
+        if (!$uid) {
+            return;
         }
         
-        $this->room->unbind($this->getSender(), $rooms);
+        $this->room->unbind($this->getSender(), $this->encodeUid($uid));
+    }
+    
+    
+    /**
+     * 通过用户ID获取FD连接标识符
+     * @param int|string $uid 用户ID
+     * @return int
+     */
+    public function getFdByUid($uid) : int
+    {
+        if (!$uid) {
+            return 0;
+        }
         
-        return $this;
+        $fds = $this->room->getFdsByRoom($this->encodeUid($uid));
+        
+        return $fds[0] ?? 0;
+    }
+    
+    
+    /**
+     * 通过FD连接标识符获取用户ID
+     * @param int $fd
+     * @return string|false
+     */
+    public function getUidByFd(int $fd)
+    {
+        $length = strlen($this->uidPrefix);
+        foreach ($this->room->getRoomsByFd($fd) as $uid) {
+            if (!$this->checkIsUid($uid)) {
+                continue;
+            }
+            
+            return substr($uid, $length);
+        }
+        
+        return false;
+    }
+    
+    
+    /**
+     * 通过分组获取该分组下的所有用户ID
+     * @param string|int $group 分组名称
+     * @return string[]
+     */
+    public function getUidListByGroup($group) : array
+    {
+        if (!$group) {
+            return [];
+        }
+        
+        $list = [];
+        foreach ($this->getFdsByGroup($group) as $fd) {
+            if ($uid = $this->getUidByFd($fd)) {
+                $list[] = $uid;
+            }
+        }
+        
+        return $list;
+    }
+    
+    
+    /**
+     * 通过用户ID检测是否在线
+     * @param int|string $uid 用户ID
+     * @return bool
+     */
+    public function isOnlineByUid($uid) : bool
+    {
+        $fd = $this->getFdByUid($uid);
+        if (!$fd) {
+            return false;
+        }
+        
+        return $this->isOnline($fd);
+    }
+    
+    
+    /**
+     * 将当前连接FD标识符加入分组
+     * @param string|int $group 分组名称
+     */
+    public function joinGroup($group)
+    {
+        if (!$group) {
+            return;
+        }
+        
+        $this->room->bind($this->getSender(), $this->encodeGroup($group));
+    }
+    
+    
+    /**
+     * 将当前连接FD标识符离开分组
+     * @param int|string $group 分组名称
+     */
+    public function leaveGroup($group)
+    {
+        if (!$group) {
+            return;
+        }
+        
+        $this->room->unbind($this->getSender(), $this->encodeGroup($group));
+    }
+    
+    
+    /**
+     * 通过分组获取所有的FD连接标识符
+     * @param $group
+     * @return int[]
+     */
+    public function getFdsByGroup($group) : array
+    {
+        if (!$group) {
+            return [];
+        }
+        
+        return $this->room->getFdsByRoom($this->encodeGroup($group));
+    }
+    
+    
+    /**
+     * 通过FD连接标识符获取所有加入的分组
+     * @param int $fd FD连接标识符
+     * @return string[]
+     */
+    public function getGroupsByFd(int $fd) : array
+    {
+        if (!$fd) {
+            return [];
+        }
+        
+        $length = strlen($this->groupPrefix);
+        $list   = [];
+        foreach ($this->room->getRoomsByFd($fd) as $group) {
+            if (!$this->checkIsGroup($group)) {
+                continue;
+            }
+            $list[] = substr($group, $length);
+        }
+        
+        return $list;
+    }
+    
+    
+    /**
+     * 通过用户ID获取该用户加入的所有分组
+     * @param string|int $uid 用户ID
+     * @return string[]
+     */
+    public function getGroupsByUid($uid) : array
+    {
+        if (!$uid) {
+            return [];
+        }
+        
+        return $this->getGroupsByFd($this->getFdByUid($uid));
+    }
+    
+    
+    /**
+     * 编码用户ID
+     * @param int|string $name
+     * @return string
+     */
+    final public function encodeUid($name) : string
+    {
+        return "{$this->uidPrefix}{$name}";
+    }
+    
+    
+    /**
+     * 解码用户ID
+     * @param string $uid 用户ID
+     * @param bool   $check 是否检测合规，不合规返回false
+     * @return string|false
+     */
+    final public function decodeUid(string $uid, bool $check = true)
+    {
+        if ($check && !$this->checkIsUid($uid)) {
+            return false;
+        }
+        
+        return substr($uid, strlen($this->uidPrefix));
+    }
+    
+    
+    /**
+     * 检测是否UID
+     * @param $uid
+     * @return bool
+     */
+    final public function checkIsUid($uid) : bool
+    {
+        return 0 === strpos($uid, $this->uidPrefix);
+    }
+    
+    
+    /**
+     * 编码分组名
+     * @param int|string $name
+     * @return string
+     */
+    final public function encodeGroup($name) : string
+    {
+        return "{$this->groupPrefix}{$name}";
+    }
+    
+    
+    /**
+     * 解码分组名
+     * @param string $group 分组名
+     * @param bool   $check 是否检测合规，不合规返回false
+     * @return string|false
+     */
+    final public function decodeGroup(string $group, bool $check = true)
+    {
+        if ($check && $this->checkIsGroup($group)) {
+            return false;
+        }
+        
+        return substr($group, strlen($this->groupPrefix));
+    }
+    
+    
+    /**
+     * 检测是否分组
+     * @param $group
+     * @return bool
+     */
+    final public function checkIsGroup($group) : bool
+    {
+        return 0 === strpos($group, $this->groupPrefix);
     }
     
     
@@ -393,42 +625,58 @@ class Websocket
     
     /**
      * 关闭客户端
-     * @param int|null $fd
+     * @param int|null $fd FD连接标识符
      * @return boolean
      */
-    public function close(int $fd = null)
+    public function close(int $fd = null) : bool
     {
-        return $this->server->close($fd ?: $this->getSender());
+        return (bool) $this->server->close($fd ?: $this->getSender());
     }
     
     
     /**
-     * 判断某个客户端(fd)是否已建立连接
-     * @param int|null $fd
+     * 判断某个FD是否已建立连接
+     * @param int|null $fd FD连接标识符
      * @return bool
      */
-    public function isEstablished(int $fd = null) : bool
+    public function isOnline(int $fd = null) : bool
     {
         return (bool) $this->server->isEstablished($fd ?: $this->getSender());
     }
     
     
     /**
-     * 与客户端断开连接
-     * @param int|null $fd 客户端ID
-     * @param int      $code 错误码
+     * 主动向 WebSocket 客户端发送关闭帧并关闭该连接。
+     * @param int|null $fd FD连接标识符
+     * @param int      $code 错误码，1000为正常断开
      * @param string   $reason 错误原因
      * @return bool
      */
     public function disconnect(int $fd = null, int $code = 1000, string $reason = '') : bool
     {
+        if (!$this->isOnline($fd)) {
+            return true;
+        }
+        
         return (bool) $this->server->disconnect($fd ?: $this->getSender(), $code, $reason);
     }
     
     
     /**
-     * 设置发送者客户端ID(fd)
-     * @param int
+     * 发送数据至客户端
+     * @param string   $data 数据
+     * @param int|null $fd FD连接标识符
+     * @return bool
+     */
+    public function send(string $data, ?int $fd = null) : bool
+    {
+        return $this->server->push($fd ?: $this->getSender(), $data);
+    }
+    
+    
+    /**
+     * 设置发送者FD连接标识符
+     * @param int $fd FD连接标识符
      * @return $this
      */
     public function setSender(int $fd)
@@ -441,7 +689,7 @@ class Websocket
     
     
     /**
-     * 获取发送者客户端ID
+     * 获取发送者FD连接标识符
      * @return int
      */
     public function getSender() : int
@@ -451,7 +699,7 @@ class Websocket
     
     
     /**
-     * 获取我们要将数据推送到的所有fd
+     * 获取要将数据推送到的所有FD连接标识符
      * @return array
      */
     public function getFds() : array
@@ -483,28 +731,6 @@ class Websocket
     {
         $this->isBroadcast = false;
         $this->to          = [];
-    }
-    
-    
-    /**
-     * 生成客户端名称
-     * @param int|string $name
-     * @return string
-     */
-    public function clientName($name) : string
-    {
-        return "u{$name}";
-    }
-    
-    
-    /**
-     * 生成房间名称
-     * @param int|string $name
-     * @return string
-     */
-    public function roomName($name) : string
-    {
-        return "g{$name}";
     }
     
     
@@ -541,5 +767,15 @@ class Websocket
     protected function pingData() : string
     {
         return "ping";
+    }
+    
+    
+    /**
+     * 获房间驱动
+     * @return Room
+     */
+    public function getRoom() : Room
+    {
+        return $this->room;
     }
 }

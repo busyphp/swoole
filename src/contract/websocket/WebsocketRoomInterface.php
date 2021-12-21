@@ -52,10 +52,10 @@ interface WebsocketRoomInterface
     
     /**
      * 通过房间名获取所有加入该房间的FD
-     * @param string $room 房间名
+     * @param string|int $room 房间名
      * @return array
      */
-    public function getFdsByRoom(string $room) : array;
+    public function getFdsByRoom($room) : array;
     
     
     /**

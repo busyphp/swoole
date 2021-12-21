@@ -99,7 +99,7 @@ class Redis implements WebsocketRoomInterface
         $this->addValue((string) $fd, $rooms, WebsocketRoomInterface::DESCRIPTORS_KEY);
         
         foreach ($rooms as $room) {
-            $this->addValue($room, [$fd], WebsocketRoomInterface::ROOMS_KEY);
+            $this->addValue((string) $room, [$fd], WebsocketRoomInterface::ROOMS_KEY);
         }
     }
     
@@ -125,13 +125,13 @@ class Redis implements WebsocketRoomInterface
     
     /**
      * 通过房间名获取所有加入该房间的FD
-     * @param string $room 房间名
+     * @param string|int $room 房间名
      * @return array
      * @throws BorrowConnectionTimeoutException
      */
-    public function getFdsByRoom(string $room) : array
+    public function getFdsByRoom($room) : array
     {
-        return $this->getValue($room, WebsocketRoomInterface::ROOMS_KEY) ?? [];
+        return $this->getValue((string) $room, WebsocketRoomInterface::ROOMS_KEY) ?? [];
     }
     
     

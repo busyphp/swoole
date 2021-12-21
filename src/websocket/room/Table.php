@@ -73,8 +73,8 @@ class Table implements WebsocketRoomInterface
      */
     public function bind(int $fd, $rooms)
     {
-        $rooms = $this->getRoomsByFd($fd);
-        $rooms = is_array($rooms) ? $rooms : [$rooms];
+        $roomList = $this->getRoomsByFd($fd);
+        $rooms    = is_array($rooms) ? $rooms : [$rooms];
         
         foreach ($rooms as $room) {
             $fds = $this->getFdsByRoom($room);
@@ -83,13 +83,13 @@ class Table implements WebsocketRoomInterface
                 continue;
             }
             
-            $fds[]   = $fd;
-            $rooms[] = $room;
+            $fds[]      = $fd;
+            $roomList[] = $room;
             
             $this->setRoomFds($room, $fds);
         }
         
-        $this->setFdRooms($fd, $rooms);
+        $this->setFdRooms($fd, $roomList);
     }
     
     
@@ -122,12 +122,12 @@ class Table implements WebsocketRoomInterface
     
     /**
      * 通过房间名获取所有加入该房间的FD
-     * @param string $room 房间名
+     * @param string|int $room 房间名
      * @return array
      */
-    public function getFdsByRoom(string $room) : array
+    public function getFdsByRoom($room) : array
     {
-        return $this->getValue($room, WebsocketRoomInterface::ROOMS_KEY) ?? [];
+        return $this->getValue((string) $room, WebsocketRoomInterface::ROOMS_KEY) ?? [];
     }
     
     
@@ -148,9 +148,9 @@ class Table implements WebsocketRoomInterface
      * @param array  $fds FD
      * @return $this
      */
-    protected function setRoomFds(string $room, array $fds)
+    protected function setRoomFds($room, array $fds)
     {
-        return $this->setValue($room, $fds, WebsocketRoomInterface::ROOMS_KEY);
+        return $this->setValue((string) $room, $fds, WebsocketRoomInterface::ROOMS_KEY);
     }
     
     

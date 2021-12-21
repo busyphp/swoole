@@ -37,7 +37,7 @@ class WebsocketHandler extends Websocket
         
         $this->push(EnginePacket::open($payload));
         
-        $this->event->trigger('swoole.websocket.open', $request);
+        $this->event->trigger('swoole.websocket.open', [$fd, $request]);
         
         if ($this->eio < 4) {
             $this->resetPingTimeout($this->pingInterval + $this->pingTimeout);
@@ -70,7 +70,7 @@ class WebsocketHandler extends Websocket
                     case Packet::EVENT:
                         $type   = array_shift($packet->data);
                         $data   = $packet->data;
-                        $result = $this->event->trigger('swoole.websocket.event', ['type' => $type, 'data' => $data]);
+                        $result = $this->event->trigger('swoole.websocket.event', [$frame, ['type' => $type, 'data' => $data]]);
                         
                         if ($packet->id !== null) {
                             $responsePacket = Packet::create(Packet::ACK, [
@@ -113,7 +113,7 @@ class WebsocketHandler extends Websocket
     {
         Timer::clear($this->pingTimeoutTimer);
         Timer::clear($this->pingIntervalTimer);
-        $this->event->trigger('swoole.websocket.close', $reactorId);
+        $this->event->trigger('swoole.websocket.close', [$fd, $reactorId]);
     }
     
     

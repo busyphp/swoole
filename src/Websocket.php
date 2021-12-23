@@ -2,6 +2,7 @@
 
 namespace BusyPHP\swoole;
 
+use BusyPHP\helper\FilterHelper;
 use BusyPHP\Request;
 use BusyPHP\swoole\event\WebsocketCloseEvent;
 use BusyPHP\swoole\event\WebSocketMessageEvent;
@@ -313,19 +314,17 @@ class Websocket
     
     
     /**
-     * 通过用户ID获取FD连接标识符
+     * 通过用户ID获取FD连接标识符列表
      * @param int|string $uid 用户ID
-     * @return int
+     * @return int[]
      */
-    public function getFdByUid($uid) : int
+    public function getFdListByUid($uid) : array
     {
         if (!$uid) {
-            return 0;
+            return [];
         }
         
-        $fds = $this->room->getFdsByRoom($this->encodeUid($uid));
-        
-        return $fds[0] ?? 0;
+        return $this->room->getFdsByRoom($this->encodeUid($uid));
     }
     
     
@@ -350,7 +349,7 @@ class Websocket
     
     
     /**
-     * 通过分组获取该分组下的所有用户ID
+     * 通过分组获取该分组下的所有用户ID列表
      * @param string|int $group 分组名称
      * @return string[]
      */
@@ -361,9 +360,11 @@ class Websocket
         }
         
         $list = [];
-        foreach ($this->getFdsByGroup($group) as $fd) {
+        foreach ($this->getFdListByGroup($group) as $fd) {
             if ($uid = $this->getUidByFd($fd)) {
-                $list[] = $uid;
+                if (!in_array($uid, $list)) {
+                    $list[] = $uid;
+                }
             }
         }
         
@@ -378,12 +379,18 @@ class Websocket
      */
     public function isOnlineByUid($uid) : bool
     {
-        $fd = $this->getFdByUid($uid);
-        if (!$fd) {
+        $list = $this->getFdListByUid($uid);
+        if (!$list) {
             return false;
         }
         
-        return $this->isOnline($fd);
+        foreach ($list as $fd) {
+            if ($this->isOnline($fd)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     
@@ -416,11 +423,11 @@ class Websocket
     
     
     /**
-     * 通过分组获取所有的FD连接标识符
+     * 通过分组获取所有的FD连接标识符列表
      * @param $group
      * @return int[]
      */
-    public function getFdsByGroup($group) : array
+    public function getFdListByGroup($group) : array
     {
         if (!$group) {
             return [];
@@ -431,11 +438,11 @@ class Websocket
     
     
     /**
-     * 通过FD连接标识符获取所有加入的分组
+     * 通过FD连接标识符获取所有加入的分组列表
      * @param int $fd FD连接标识符
      * @return string[]
      */
-    public function getGroupsByFd(int $fd) : array
+    public function getGroupListByFd(int $fd) : array
     {
         if (!$fd) {
             return [];
@@ -455,17 +462,26 @@ class Websocket
     
     
     /**
-     * 通过用户ID获取该用户加入的所有分组
+     * 通过用户ID获取该用户加入的所有分组列表
      * @param string|int $uid 用户ID
      * @return string[]
      */
-    public function getGroupsByUid($uid) : array
+    public function getGroupListByUid($uid) : array
     {
         if (!$uid) {
             return [];
         }
         
-        return $this->getGroupsByFd($this->getFdByUid($uid));
+        $groups = [];
+        foreach ($this->getFdListByUid($uid) as $fd) {
+            foreach ($this->getGroupListByFd($fd) as $group) {
+                if (!in_array($group, $groups)) {
+                    $groups[] = $group;
+                }
+            }
+        }
+        
+        return $groups;
     }
     
     

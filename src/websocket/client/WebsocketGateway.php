@@ -82,7 +82,7 @@ class WebsocketGateway extends BaseGateway
      * @param int              $fd FD连接标识符
      * @param string|int|array $rooms 房间名称，空则离开所有房间
      */
-    public function leaveRoom(int $fd, $rooms)
+    public function leaveRoom(int $fd, $rooms = [])
     {
         if ($this->canRun()) {
             $this->getWebsocket()->getRoom()->unbind($fd, $rooms);
@@ -123,14 +123,14 @@ class WebsocketGateway extends BaseGateway
     
     
     /**
-     * 通过用户ID获取FD连接标识符
+     * 通过用户ID获取FD连接标识符列表
      * @param string|int $uid 用户ID
-     * @return int 返回0代表不在线
+     * @return int[]
      */
-    public function getFdByUid($uid) : int
+    public function getFdListByUid($uid) : array
     {
         if ($this->canRun()) {
-            return $this->getWebsocket()->getFdByUid($uid);
+            return $this->getWebsocket()->getFdListByUid($uid);
         }
         
         return $this->gateway(__FUNCTION__, func_get_args());
@@ -154,7 +154,7 @@ class WebsocketGateway extends BaseGateway
     
     /**
      * 通过分组名称获取所有加入的用户ID
-     * @param $group
+     * @param string|int $group 分组名称
      * @return string[]
      */
     public function getUidListByGroup($group) : array
@@ -216,14 +216,14 @@ class WebsocketGateway extends BaseGateway
      * @param int|string $group 分组名称
      * @return int[]
      */
-    public function getFdsByGroup($group) : array
+    public function getFdListByGroup($group) : array
     {
         if (!$group) {
             return [];
         }
         
         if ($this->canRun()) {
-            return $this->getWebsocket()->getFdsByGroup($group);
+            return $this->getWebsocket()->getFdListByGroup($group);
         }
         
         return $this->gateway(__FUNCTION__, func_get_args());
@@ -235,14 +235,14 @@ class WebsocketGateway extends BaseGateway
      * @param int $fd FD连接标识符
      * @return string[]
      */
-    public function getGroupsByFd(int $fd) : array
+    public function getGroupListByFd(int $fd) : array
     {
         if (!$fd) {
             return [];
         }
         
         if ($this->canRun()) {
-            return $this->getWebsocket()->getGroupsByFd($fd);
+            return $this->getWebsocket()->getGroupListByFd($fd);
         }
         
         return $this->gateway(__FUNCTION__, func_get_args());
@@ -254,14 +254,14 @@ class WebsocketGateway extends BaseGateway
      * @param string|int $uid 用户ID
      * @return string[]
      */
-    public function getGroupsByUid($uid) : array
+    public function getGroupListByUid($uid) : array
     {
         if (!$uid) {
             return [];
         }
         
         if ($this->canRun()) {
-            return $this->getWebsocket()->getGroupsByUid($uid);
+            return $this->getWebsocket()->getGroupListByUid($uid);
         }
         
         return $this->gateway(__FUNCTION__, func_get_args());
@@ -397,12 +397,12 @@ class WebsocketGateway extends BaseGateway
     
     /**
      * 发送数据给分组
-     * @param string|int $room 分组名称
+     * @param string|int $group 分组名称
      * @param string     $data 数据内容
      */
-    public function sendToGroup($room, string $data)
+    public function sendToGroup($group, string $data)
     {
-        $this->batchSendToGroup([$room => $data]);
+        $this->batchSendToGroup([$group => $data]);
     }
     
     

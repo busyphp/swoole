@@ -39,7 +39,7 @@ trait InteractsWithQueue
             
             // 启动多个work并行执行
             $number = Arr::get($options, 'number', 0);
-            $number = $number <= 1 ? 1 : $number;
+            $number = max($number, 1);
             for ($i = 0; $i < $number; $i++) {
                 $this->getServer()
                     ->addProcess(new Process(function(Process $process) use ($options, $connection, $queue, $i) {

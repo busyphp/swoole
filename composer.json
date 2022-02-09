@@ -56,10 +56,10 @@
 				"class"   : "BusyPHP\\swoole\\app\\controller\\ManagerController",
 				"install" : {
 					"install_operate"   : {
-						"request_confirm" : "确认要安装 <code>__package__</code> 吗？<div class=text-gray>注意：安装会覆盖数据库中的 <code>*_jobs</code>, <code>*_failed_jobs</code> 表</div>"
+						"request_confirm" : "确认要安装 <code>__package__</code> 吗？"
 					},
 					"uninstall_operate" : {
-						"request_confirm" : "确认要卸载 <code>__package__</code> 吗？<div class=text-gray>注意：卸载会删除数据库中的 <code>*_jobs</code>, <code>*_failed_jobs</code> 表</div>"
+						"request_confirm" : "确认要卸载 <code>__package__</code> 吗？"
 					}
 				},
 				"setting" : {

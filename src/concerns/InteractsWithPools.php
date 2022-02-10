@@ -22,7 +22,7 @@ trait InteractsWithPools
     /**
      * @return Pool
      */
-    public function getPools()
+    public function getPools() : Pool
     {
         return $this->app->make(Pool::class);
     }

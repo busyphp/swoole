@@ -45,12 +45,15 @@
 		"preferred-install" : "dist"
 	},
 	"extra"       : {
-		"think"   : {
+		"branch-alias" : {
+			"dev-master" : "2.x-dev"
+		},
+		"think"        : {
 			"config" : {
 				"swoole" : "src/config/swoole.php"
 			}
 		},
-		"busyphp" : {
+		"busyphp"      : {
 			"manager"  : {
 				"name"    : "Swoole模块",
 				"class"   : "BusyPHP\\swoole\\app\\controller\\ManagerController",

@@ -5,7 +5,6 @@ namespace BusyPHP\swoole\concerns;
 use BusyPHP\exception\ClassNotImplementsException;
 use BusyPHP\swoole\contract\timer\TimerInterface;
 use BusyPHP\swoole\contract\timer\TimerParameter;
-use Closure;
 use Swoole\Process;
 use Swoole\Runtime;
 use Swoole\Server;
@@ -17,7 +16,6 @@ use Swoole\Timer;
  * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
  * @version $Id: 2021/12/8 上午11:07 InteractsWithTimer.php
  * @method Server getServer();
- * @method runInSandbox(Closure $callback)
  */
 trait InteractsWithTimer
 {
@@ -43,7 +41,7 @@ trait InteractsWithTimer
             }
             
             $concurrency = $worker::onTimerGetConcurrency();
-            $concurrency = $concurrency <= 1 ? 1 : $concurrency;
+            $concurrency = max($concurrency, 1);
             for ($i = 0; $i < $concurrency; $i++) {
                 $this->server->addProcess(new Process(function(Process $process) use ($worker, $i) {
                     Runtime::enableCoroutine();
@@ -54,17 +52,12 @@ trait InteractsWithTimer
                     
                     // 阻塞模式
                     if ($worker::onTimerGetMode()) {
-                        $this->timerAfter($worker::onTimerGetMillisecond(), [
-                            $this,
-                            'runInSandbox'
-                        ], function() use ($worker, $process) {
-                            $worker::onTimerRun(new TimerParameter(0, $this->server, $this->container));
+                        $this->timerAfter($worker::onTimerGetMillisecond(), function() use ($worker, $process) {
+                            $worker::onTimerRun(new TimerParameter(0, $this->server, $this->app));
                         });
                     } else {
                         Timer::tick($worker::onTimerGetMillisecond(), function(int $timeId) use ($worker) {
-                            $this->runInSandbox(function() use ($timeId, $worker) {
-                                $worker::onTimerRun(new TimerParameter($timeId, $this->server, $this->container));
-                            });
+                            $worker::onTimerRun(new TimerParameter($timeId, $this->server, $this->app));
                         });
                     }
                 }, false, 0, true));

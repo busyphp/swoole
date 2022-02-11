@@ -56,16 +56,14 @@ trait InteractsWithQueue
                         $timeout = Arr::get($options, 'timeout', 60);
                         
                         /** @var Worker $worker */
-                        $worker = $this->container->make(Worker::class);
+                        $worker = $this->app->make(Worker::class);
                         
                         while (true) {
                             $timer = Timer::after($timeout * 1000, function() use ($process) {
                                 $process->exit();
                             });
                             
-                            $this->runInSandbox(function() use ($worker, $connection, $queue, $delay, $sleep, $tries) {
-                                $worker->runNextJob($connection, $queue, $delay, $sleep, $tries);
-                            });
+                            $worker->runNextJob($connection, $queue, $delay, $sleep, $tries);
                             
                             Timer::clear($timer);
                         }

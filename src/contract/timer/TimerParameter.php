@@ -76,8 +76,8 @@ class TimerParameter
     
     /**
      * 投递异步任务
-     * @param string $worker
-     * @param mixed  $data
+     * @param class-string<TaskInterface> $worker 任务类，必须集成 {@see TaskInterface} 接口
+     * @param mixed                       $data 任务数据
      */
     public function taskAsync(string $worker, $data)
     {

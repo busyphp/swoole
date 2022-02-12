@@ -3,7 +3,6 @@
 namespace BusyPHP\swoole\concerns;
 
 use BusyPHP\helper\LogHelper;
-use BusyPHP\queue\connector\Database;
 use BusyPHP\queue\event\JobFailed;
 use BusyPHP\queue\facade\Queue;
 use BusyPHP\queue\FailedJob;

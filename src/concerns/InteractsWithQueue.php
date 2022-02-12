@@ -67,7 +67,7 @@ trait InteractsWithQueue
                         // TODO 官方库也会出现这个问题，等待官方库修复后移除以下逻辑
                         // 驱动重启后，无法自动重连
                         // 目前解决办法是，尝试5分钟定时写入一个测试任务，如果写入失败，就重启队列
-                        Timer::tick(60 * 1 * 1000, function() use ($connection, $process) {
+                        Timer::tick(60 * 5 * 1000, function() use ($connection, $process) {
                             $this->runInSandbox(function() use ($connection, $process) {
                                 try {
                                     Queue::connection($connection)->push(QueueTestPingJob::class, '');

@@ -17,6 +17,7 @@ use think\helper\Arr;
  * @copyright (c) 2015--2021 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
  * @version $Id: 2021/11/5 上午10:10 InteractsWithQueue.php $
  * @method Server getServer()
+ * @method void runInSandbox(\Closure $callable)
  */
 trait InteractsWithQueue
 {
@@ -63,7 +64,12 @@ trait InteractsWithQueue
                                 $process->exit();
                             });
                             
-                            $worker->runNextJob($connection, $queue, $delay, $sleep, $tries);
+                            $this->runWithBarrier([
+                                $this,
+                                'runInSandbox'
+                            ], function() use ($worker, $connection, $queue, $delay, $sleep, $tries) {
+                                $worker->runNextJob($connection, $queue, $delay, $sleep, $tries);
+                            });
                             
                             Timer::clear($timer);
                         }

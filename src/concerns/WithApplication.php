@@ -9,6 +9,8 @@ use BusyPHP\swoole\pool\Cache;
 use BusyPHP\swoole\pool\Db;
 use BusyPHP\swoole\Sandbox;
 use ReflectionException;
+use Swoole\Coroutine;
+use Swoole\Coroutine\Channel;
 
 /**
  * Trait WithApplication
@@ -66,7 +68,7 @@ trait WithApplication
     
     /**
      * 获取应用
-     * @return SwooleApp
+     * @return App
      */
     protected function getApplication()
     {
@@ -94,5 +96,25 @@ trait WithApplication
             $this->getSandbox()->run($callable);
         } catch (ReflectionException $e) {
         }
+    }
+    
+    
+    /**
+     * 在协程中运行
+     * @param callable $func
+     * @param          ...$params
+     * @return void
+     */
+    public function runWithBarrier(callable $func, ...$params)
+    {
+        $channel = new Channel(1);
+        
+        Coroutine::create(function(...$params) use ($channel, $func) {
+            call_user_func_array($func, $params);
+            
+            $channel->close();
+        }, ...$params);
+        
+        $channel->pop();
     }
 }

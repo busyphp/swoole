@@ -107,7 +107,7 @@ class Sandbox
      * 初始化
      * @return $this
      */
-    protected function initialize()
+    protected function initialize() : self
     {
         Container::setInstance(function() {
             return $this->getApplication();
@@ -165,6 +165,7 @@ class Sandbox
     public function clear()
     {
         if ($app = $this->getSnapshot()) {
+            $app->clearInstances();
             unset($this->snapshots[$this->getSnapshotId()]);
         }
         
@@ -176,9 +177,9 @@ class Sandbox
     /**
      * 获取APP对象
      * @param bool $init
-     * @return \BusyPHP\App
+     * @return SwooleApp
      */
-    public function getApplication($init = false) : \BusyPHP\App
+    public function getApplication(bool $init = false) : SwooleApp
     {
         $snapshot = $this->getSnapshot($init);
         if ($snapshot instanceof Container) {
@@ -201,7 +202,7 @@ class Sandbox
      * @param bool $init
      * @return int
      */
-    protected function getSnapshotId($init = false) : int
+    protected function getSnapshotId(bool $init = false) : int
     {
         if ($init) {
             /** @var ArrayObject $context */
@@ -231,7 +232,7 @@ class Sandbox
      * @param bool $init
      * @return \BusyPHP\App|null
      */
-    public function getSnapshot($init = false)
+    public function getSnapshot(bool $init = false)
     {
         return $this->snapshots[$this->getSnapshotId($init)] ?? null;
     }

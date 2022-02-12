@@ -17,7 +17,7 @@ class App extends \BusyPHP\App
      * 设置是否运行在CLI模式中
      * @param bool $inConsole
      */
-    public function setInConsole($inConsole = true)
+    public function setInConsole(bool $inConsole = true)
     {
         $this->inConsole = $inConsole;
     }
@@ -30,5 +30,14 @@ class App extends \BusyPHP\App
     public function runningInConsole() : bool
     {
         return $this->inConsole;
+    }
+    
+    
+    /**
+     * 清理实例
+     */
+    public function clearInstances()
+    {
+        $this->instances = [];
     }
 }

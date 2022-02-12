@@ -56,7 +56,9 @@ trait InteractsWithHttp
             try {
                 $response = $this->handleRequest($http, $request);
             } catch (Throwable $e) {
-                $response = $this->app->make(Handle::class)->render($request, $e);
+                /** @var Handle $handle */
+                $handle   = $this->app->make(Handle::class);
+                $response = $handle->render($request, $e);
             }
             
             $this->setCookie($res, $app->cookie);
@@ -89,14 +91,19 @@ trait InteractsWithHttp
     }
     
     
-    protected function handleRequest(Http $http, $request)
+    /**
+     * 处理请求
+     * @param Http             $http
+     * @param \BusyPHP\Request $request
+     * @return \think\Response
+     */
+    protected function handleRequest(Http $http, \BusyPHP\Request $request)
     {
         $level = ob_get_level();
         ob_start();
         
         $response = $http->run($request);
-        
-        $content = $response->getContent();
+        $content  = $response->getContent();
         
         if (ob_get_level() == 0) {
             ob_start();
@@ -116,6 +123,11 @@ trait InteractsWithHttp
     }
     
     
+    /**
+     * 预处理请求
+     * @param Request $req
+     * @return \BusyPHP\Request
+     */
     protected function prepareRequest(Request $req)
     {
         $header = $req->header ?: [];

@@ -2,14 +2,19 @@
 
 namespace BusyPHP\swoole\concerns;
 
+use BusyPHP\helper\LogHelper;
+use BusyPHP\queue\connector\Database;
 use BusyPHP\queue\event\JobFailed;
+use BusyPHP\queue\facade\Queue;
 use BusyPHP\queue\FailedJob;
 use BusyPHP\queue\Worker;
+use BusyPHP\swoole\QueueTestPingJob;
 use Swoole\Process;
 use Swoole\Runtime;
 use Swoole\Server;
 use Swoole\Timer;
 use think\helper\Arr;
+use Throwable;
 
 /**
  * 准备队列
@@ -58,6 +63,20 @@ trait InteractsWithQueue
                         
                         /** @var Worker $worker */
                         $worker = $this->app->make(Worker::class);
+                        
+                        // TODO 官方库也会出现这个问题，等待官方库修复后移除以下逻辑
+                        // 驱动重启后，无法自动重连
+                        // 目前解决办法是，尝试5分钟定时写入一个测试任务，如果写入失败，就重启队列
+                        Timer::tick(60 * 1 * 1000, function() use ($connection, $process) {
+                            $this->runInSandbox(function() use ($connection, $process) {
+                                try {
+                                    Queue::connection($connection)->push(QueueTestPingJob::class, '');
+                                } catch (Throwable $e) {
+                                    LogHelper::default()->tag('队列连接失败，准备重启')->error($e->getMessage());
+                                    $process->exit();
+                                }
+                            });
+                        });
                         
                         while (true) {
                             $timer = Timer::after($timeout * 1000, function() use ($process) {

@@ -115,7 +115,7 @@ trait InteractsWithQueue
     protected function logQueueFailedJob(JobFailed $event)
     {
         /** @var FailedJob $failer */
-        $failer = $this->container['queue.failer'];
+        $failer = $this->container['busy.queue.failer'];
         $failer->log($event->connection, $event->job->getQueue(), $event->job->getRawBody(), $event->exception);
     }
 }

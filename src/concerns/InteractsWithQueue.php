@@ -52,7 +52,7 @@ trait InteractsWithQueue
                         
                         $this->clearCache();
                         $this->prepareApplication();
-                        $this->setProcessName("queue {$queue} progress {$i}");
+                        $this->setProcessName("queue {$queue} process {$i}");
                         $this->bindRpcInterface();
                         
                         $delay   = Arr::get($options, 'delay', 0);

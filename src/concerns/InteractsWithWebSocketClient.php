@@ -47,7 +47,7 @@ trait InteractsWithWebSocketClient
                 
                 $this->clearCache();
                 $this->prepareApplication();
-                $this->setProcessName("websocket client {$name} progress");
+                $this->setProcessName("websocket client {$name} process");
                 
                 try {
                     $this->createWebsocketClient($process, $url, $handler);

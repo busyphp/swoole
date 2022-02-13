@@ -50,7 +50,7 @@ trait InteractsWithTimer
                     
                     $this->clearCache();
                     $this->prepareApplication();
-                    $this->setProcessName("timer {$worker} progress {$i}");
+                    $this->setProcessName("timer {$worker} process {$i}");
                     
                     // 阻塞模式
                     if ($worker::onTimerGetMode()) {

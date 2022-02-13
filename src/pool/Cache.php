@@ -2,6 +2,7 @@
 
 namespace BusyPHP\swoole\pool;
 
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use BusyPHP\swoole\pool\proxy\Store;
 
 /**
@@ -12,10 +13,12 @@ use BusyPHP\swoole\pool\proxy\Store;
  */
 class Cache extends \think\Cache
 {
+    use WithSwooleConfig;
+    
     protected function createDriver(string $name)
     {
         return new Store(function() use ($name) {
             return parent::createDriver($name);
-        }, $this->app->config->get('swoole.pool.cache', []));
+        }, $this->getSwooleConfig('pool.cache', []));
     }
 }

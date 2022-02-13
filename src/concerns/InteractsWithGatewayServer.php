@@ -25,8 +25,8 @@ trait InteractsWithGatewayServer
      */
     protected function prepareGatewayServer()
     {
-        $host = $this->getConfig('server.host', '') ?: '127.0.0.1';
-        $port = $this->getConfig('gateway.server.port', '') ?: 8083;
+        $host = $this->getSwooleConfig('server.host', '') ?: '127.0.0.1';
+        $port = $this->getSwooleConfig('gateway.server.port', '') ?: 8083;
         
         /** @var Port $server */
         $server = $this->getServer()->addlistener($host, $port, SWOOLE_SOCK_TCP);

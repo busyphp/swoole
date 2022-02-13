@@ -14,8 +14,10 @@ use BusyPHP\swoole\concerns\InteractsWithSwooleTable;
 use BusyPHP\swoole\concerns\InteractsWithTcp;
 use BusyPHP\swoole\concerns\InteractsWithTimer;
 use BusyPHP\swoole\concerns\InteractsWithWebsocket;
+use BusyPHP\swoole\concerns\InteractsWithWebSocketClient;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use Swoole\Server;
 
 
@@ -33,6 +35,7 @@ class Manager
     use InteractsWithSwooleTable;
     use InteractsWithHttp;
     use InteractsWithWebsocket;
+    use InteractsWithWebSocketClient;
     use InteractsWithTcp;
     use InteractsWithPools;
     use InteractsWithRpcClient;
@@ -41,6 +44,7 @@ class Manager
     use InteractsWithTimer;
     use WithContainer;
     use WithApplication;
+    use WithSwooleConfig;
     
     /**
      * Server events.
@@ -134,6 +138,7 @@ class Manager
         $this->preparePools();
         $this->prepareGatewayServer();
         $this->prepareWebsocket();
+        $this->prepareWebSocketClient();
         $this->setSwooleServerListeners();
         $this->prepareRpcServer();
         $this->prepareTcpServer();

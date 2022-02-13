@@ -34,13 +34,13 @@ trait WithApplication
             $this->app = new SwooleApp($this->container->getRootPath());
             $this->app->bind(SwooleApp::class, App::class);
             //绑定连接池
-            if ($this->getConfig('pool.db.enable', true)) {
+            if ($this->getSwooleConfig('pool.db.enable', true)) {
                 $this->app->bind('db', Db::class);
                 $this->app->resolving(Db::class, function(Db $db) {
                     $db->setLog($this->container->log);
                 });
             }
-            if ($this->getConfig('pool.cache.enable', true)) {
+            if ($this->getSwooleConfig('pool.cache.enable', true)) {
                 $this->app->bind('cache', Cache::class);
             }
             $this->app->initialize();
@@ -56,7 +56,7 @@ trait WithApplication
     {
         $defaultConcretes = ['db', 'cache', 'event'];
         
-        $concretes = array_merge($defaultConcretes, $this->getConfig('concretes', []));
+        $concretes = array_merge($defaultConcretes, $this->getSwooleConfig('concretes', []));
         
         foreach ($concretes as $concrete) {
             if ($this->app->has($concrete)) {

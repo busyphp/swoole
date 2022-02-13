@@ -36,39 +36,51 @@ return [
     
     // WebSocket配置
     'websocket'  => [
-        'enable'        => false,
-        
-        // 处理器，必须继承 \BusyPHP\swoole\Websocket 类
-        'handler'       => WebsocketHandler::class,
-        
-        // 客户端关系管理配置
-        'room'          => [
-            'type'  => 'table',
-            'table' => [
-                'room_rows'   => 8192,
-                'room_size'   => 2048,
-                'client_rows' => 4096,
-                'client_size' => 2048,
+        // WebSocket服务端配置
+        'server' => [
+            'enable'        => false,
+            
+            // 处理器，必须继承 \BusyPHP\swoole\Websocket 类
+            'handler'       => WebsocketHandler::class,
+            
+            // 客户端关系管理配置
+            'room'          => [
+                'type'  => 'table',
+                'table' => [
+                    'room_rows'   => 8192,
+                    'room_size'   => 2048,
+                    'client_rows' => 4096,
+                    'client_size' => 2048,
+                ],
+                'redis' => [
+                    'host'          => '127.0.0.1',
+                    'port'          => 6379,
+                    'max_active'    => 3,
+                    'max_wait_time' => 5,
+                ],
             ],
-            'redis' => [
-                'host'          => '127.0.0.1',
-                'port'          => 6379,
-                'max_active'    => 3,
-                'max_wait_time' => 5,
-            ],
+            
+            // 事件监听器
+            'listen'        => [],
+            
+            // 事件订阅
+            'subscribe'     => [],
+            
+            // ping包间隔毫秒
+            'ping_interval' => 25000,
+            
+            // 客户端多少时间未发送ping包则关闭连接
+            'ping_timeout'  => 60000,
         ],
         
-        // 事件监听器
-        'listen'        => [],
         
-        // 事件订阅
-        'subscribe'     => [],
-        
-        // ping包间隔毫秒
-        'ping_interval' => 25000,
-        
-        // 客户端多少时间未发送ping包则关闭连接
-        'ping_timeout'  => 60000,
+        // WebSocket客户端配置
+        'client' => [
+            // [
+            //    'url'     => 'ws://www.domain.com/',
+            //    'handler' => '处理类名，必须继承 \BusyPHP\swoole\websocket\client\WebSocketClient 类型',
+            // ]
+        ]
     ],
     
     // PRC服务器

@@ -22,9 +22,9 @@ trait InteractsWithRpcServer
 {
     protected function prepareRpcServer()
     {
-        if ($this->getConfig('rpc.server.enable', false)) {
-            $host = $this->getConfig('server.host', '') ?: '127.0.0.1';
-            $port = $this->getConfig('rpc.server.port', '') ?: 8082;
+        if ($this->getSwooleConfig('rpc.server.enable', false)) {
+            $host = $this->getSwooleConfig('server.host', '') ?: '127.0.0.1';
+            $port = $this->getSwooleConfig('rpc.server.port', '') ?: 8082;
             
             $rpcServer = $this->getServer()->addlistener($host, $port, SWOOLE_SOCK_TCP);
             if (!$rpcServer) {

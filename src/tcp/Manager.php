@@ -6,6 +6,7 @@ use BusyPHP\App;
 use BusyPHP\swoole\concerns\InteractsWithCoordinator;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use BusyPHP\swoole\contract\tcp\TcpHandlerInterface;
 use BusyPHP\swoole\tcp\handler\TcpHandler;
 use Swoole\Server;
@@ -23,6 +24,7 @@ class Manager
     use WithContainer;
     use InteractsWithCoordinator;
     use WithApplication;
+    use WithSwooleConfig;
     
     /**
      * 排除网关IP
@@ -37,8 +39,8 @@ class Manager
     protected function prepareTcpServer()
     {
         $this->onEvent('workerStart', function(App $app) {
-            $handler         = $this->getConfig('tcp.handler', '') ?: TcpHandler::class;
-            $this->excludeIp = $this->getConfig('tcp.gateway.exclude_ip', []);
+            $handler         = $this->getSwooleConfig('tcp.handler', '') ?: TcpHandler::class;
+            $this->excludeIp = $this->getSwooleConfig('tcp.gateway.exclude_ip', []);
             
             $this->app = $app;
             $this->app->bind(TcpHandlerInterface::class, $handler);

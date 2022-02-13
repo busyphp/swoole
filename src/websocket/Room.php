@@ -2,6 +2,7 @@
 
 namespace BusyPHP\swoole\websocket;
 
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use think\Manager;
 use BusyPHP\swoole\websocket\room\Table;
 
@@ -12,12 +13,14 @@ use BusyPHP\swoole\websocket\room\Table;
  */
 class Room extends Manager
 {
+    use WithSwooleConfig;
+    
     protected $namespace = "\\BusyPHP\\swoole\\websocket\\room\\";
     
     
     protected function resolveConfig(string $name)
     {
-        return $this->app->config->get("swoole.websocket.room.{$name}", []);
+        return $this->getSwooleConfig("websocket.server.room.{$name}", []);
     }
     
     
@@ -27,6 +30,6 @@ class Room extends Manager
      */
     public function getDefaultDriver()
     {
-        return $this->app->config->get('swoole.websocket.room.type', 'table');
+        return $this->getSwooleConfig('websocket.server.room.type', 'table');
     }
 }

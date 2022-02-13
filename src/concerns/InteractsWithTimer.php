@@ -30,13 +30,13 @@ trait InteractsWithTimer
      */
     protected function prepareTimer()
     {
-        if (!$this->getConfig('timer.enable', false)) {
+        if (!$this->getSwooleConfig('timer.enable', false)) {
             return;
         }
         
         $this->waitCoordinator('workerStart');
         $this->server = $this->getServer();
-        $workers      = $this->getConfig('timer.workers', []);
+        $workers      = $this->getSwooleConfig('timer.workers', []);
         foreach ($workers as $worker) {
             if (!is_subclass_of($worker, TimerInterface::class)) {
                 throw new ClassNotImplementsException($worker, TimerInterface::class);

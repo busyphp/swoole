@@ -34,7 +34,7 @@ trait InteractsWithPools
             /** @var Pool $pool */
             $pools = $this->getPools();
             
-            foreach ($this->getConfig('pool', []) as $name => $config) {
+            foreach ($this->getSwooleConfig('pool', []) as $name => $config) {
                 $type = Arr::pull($config, 'type');
                 if ($type && is_subclass_of($type, ConnectorInterface::class)) {
                     $pool = new ConnectionPool(Pool::pullPoolConfig($config), $this->app->make($type), $config);

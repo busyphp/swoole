@@ -2,8 +2,8 @@
 
 namespace BusyPHP\swoole;
 
-use BusyPHP\helper\FilterHelper;
 use BusyPHP\Request;
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use BusyPHP\swoole\event\WebsocketCloseEvent;
 use BusyPHP\swoole\event\WebSocketMessageEvent;
 use BusyPHP\swoole\event\WebSocketOpenEvent;
@@ -23,6 +23,8 @@ use BusyPHP\swoole\websocket\Room;
  */
 class Websocket
 {
+    use WithSwooleConfig;
+    
     /**
      * @var \BusyPHP\App
      */
@@ -112,8 +114,8 @@ class Websocket
         $this->server       = $server;
         $this->room         = $room;
         $this->event        = $event;
-        $this->pingInterval = $this->app->config->get('swoole.websocket.ping_interval', 25000);
-        $this->pingTimeout  = $this->app->config->get('swoole.websocket.ping_timeout', 60000);
+        $this->pingInterval = $this->getSwooleConfig('websocket.server.ping_interval', 25000);
+        $this->pingTimeout  = $this->getSwooleConfig('websocket.server.ping_timeout', 60000);
     }
     
     

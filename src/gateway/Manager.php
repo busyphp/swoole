@@ -8,6 +8,7 @@ use BusyPHP\exception\MethodNotFoundException;
 use BusyPHP\swoole\concerns\InteractsWithCoordinator;
 use BusyPHP\swoole\concerns\WithApplication;
 use BusyPHP\swoole\concerns\WithContainer;
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use BusyPHP\swoole\contract\BaseGateway;
 use Exception;
 use RuntimeException;
@@ -27,6 +28,7 @@ class Manager
     use WithContainer;
     use InteractsWithCoordinator;
     use WithApplication;
+    use WithSwooleConfig;
     
     /**
      * 准备TCP Server

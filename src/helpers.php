@@ -30,3 +30,7 @@ if (!defined('SWOOLE_WORKER_IDLE')) {
 if (!defined('SWOOLE_WORKER_EXIT')) {
     define('SWOOLE_WORKER_EXIT', 3);
 }
+
+if (!defined('SWOOLE_HTTP_CLIENT_ESTATUS_SEND_FAILED')) {
+    define('SWOOLE_HTTP_CLIENT_ESTATUS_SEND_FAILED', -4);
+}

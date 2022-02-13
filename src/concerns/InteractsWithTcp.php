@@ -26,12 +26,12 @@ trait InteractsWithTcp
      */
     protected function prepareTcpServer()
     {
-        if (!$this->getConfig('tcp.server.enable', false)) {
+        if (!$this->getSwooleConfig('tcp.server.enable', false)) {
             return;
         }
         
-        $host = $this->getConfig('server.host', '') ?: '127.0.0.1';
-        $port = $this->getConfig('tcp.server.port', '') ?: 8081;
+        $host = $this->getSwooleConfig('server.host', '') ?: '127.0.0.1';
+        $port = $this->getSwooleConfig('tcp.server.port', '') ?: 8081;
         
         /** @var Port $tcpServer */
         $tcpServer = $this->getServer()->addlistener($host, $port, SWOOLE_SOCK_TCP);

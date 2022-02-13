@@ -2,6 +2,7 @@
 
 namespace BusyPHP\swoole\command;
 
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\Dumper;
 use Nette\PhpGenerator\Helpers;
@@ -15,6 +16,8 @@ use function Swoole\Coroutine\run;
 
 class RpcInterface extends Command
 {
+    use WithSwooleConfig;
+    
     public function configure()
     {
         $this->setName('rpc:interface')->setDescription('Generate Rpc Service Interfaces');
@@ -29,8 +32,7 @@ class RpcInterface extends Command
             $file->setStrictTypes();
             $services = [];
             
-            $clients = $this->app->config->get('swoole.rpc.client', []);
-            
+            $clients = $this->getSwooleConfig('rpc.client', []);
             foreach ($clients as $name => $config) {
                 $parserClass = Arr::get($config, 'parser', JsonRpcParser::class);
                 /** @var RpcParserInterface $parser */

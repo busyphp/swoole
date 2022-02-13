@@ -46,7 +46,7 @@ trait InteractsWithServer
         $this->triggerEvent('init');
         
         //热更新
-        if ($this->getConfig('hot_update.enable', false)) {
+        if ($this->getSwooleConfig('hot_update.enable', false)) {
             $this->addHotUpdateProcess();
         }
         
@@ -177,7 +177,7 @@ trait InteractsWithServer
     protected function addHotUpdateProcess()
     {
         $process = new Process(function() {
-            $watcher = new FileWatcher($this->getConfig('hot_update.include', []), $this->getConfig('hot_update.exclude', []), $this->getConfig('hot_update.name', []));
+            $watcher = new FileWatcher($this->getSwooleConfig('hot_update.include', []), $this->getSwooleConfig('hot_update.exclude', []), $this->getSwooleConfig('hot_update.name', []));
             
             $watcher->watch(function() {
                 $this->getServer()->reload();
@@ -260,9 +260,9 @@ trait InteractsWithServer
     
     /**
      * 执行异步任务
-     * @param string $worker 任务类
-     * @param mixed  $data 任务数据
-     * @param int    $dstWorkerId 希望投递到哪个worker中
+     * @param string   $worker 任务类
+     * @param mixed    $data 任务数据
+     * @param int|null $dstWorkerId 希望投递到哪个worker中
      */
     public function taskAsync(string $worker, $data, ?int $dstWorkerId = null)
     {
@@ -285,10 +285,10 @@ trait InteractsWithServer
     
     /**
      * 执行同步任务
-     * @param string $worker 任务类
-     * @param mixed  $data 任务数据
-     * @param float  $timeout 任务超时秒，可以精确到0.001秒
-     * @param int    $dstWorkerId 希望投递到哪个worker中
+     * @param string     $worker 任务类
+     * @param mixed      $data 任务数据
+     * @param float|null $timeout 任务超时秒，可以精确到0.001秒
+     * @param int|null   $dstWorkerId 希望投递到哪个worker中
      */
     public function taskSync(string $worker, $data, ?float $timeout = null, ?int $dstWorkerId = null)
     {
@@ -309,9 +309,9 @@ trait InteractsWithServer
     
     /**
      * 执行同步等待并发任务
-     * @param string $worker
-     * @param mixed  $data
-     * @param float  $timeout
+     * @param string     $worker
+     * @param mixed      $data
+     * @param float|null $timeout
      */
     public function taskSyncMulti(string $worker, $data, ?float $timeout = null)
     {

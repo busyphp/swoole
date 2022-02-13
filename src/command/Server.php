@@ -3,6 +3,7 @@
 namespace BusyPHP\swoole\command;
 
 use BusyPHP\App;
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server as SwooleServer;
 use Swoole\WebSocket\Server as WebsocketServer;
@@ -22,6 +23,8 @@ use BusyPHP\swoole\PidManager;
  */
 class Server extends Command
 {
+    use WithSwooleConfig;
+    
     /**
      * 配置指令
      */
@@ -47,7 +50,7 @@ class Server extends Command
         $this->app->bind(PidManager::class, function() {
             // 设置 pid 文件地址
             // https://wiki.swoole.com/#/server/setting?id=pid_file
-            $pidFile = $this->app->config->get('swoole.server.options.pid_file', '');
+            $pidFile = $this->getSwooleConfig('server.options.pid_file', '');
             $pidFile = $pidFile ?: $this->app->getRuntimeRootPath('swoole/run.pid');
             $pidDir  = dirname($pidFile);
             if (!is_dir($pidDir)) {
@@ -116,8 +119,8 @@ class Server extends Command
         
         $this->output->writeln('Starting swoole http server...');
         
-        $host = $manager->getConfig('server.host');
-        $port = $manager->getConfig('server.port');
+        $host = $manager->getSwooleConfig('server.host');
+        $port = $manager->getSwooleConfig('server.port');
         
         $this->output->writeln("Swoole http server started: <http://{$host}:{$port}>");
         $this->output->writeln('You can exit with <info>`CTRL-C`</info>');
@@ -202,20 +205,18 @@ class Server extends Command
      */
     protected function createSwooleServer()
     {
-        $isWebsocket = $this->app->config->get('swoole.websocket.enable', false);
-        
+        $isWebsocket = $this->getSwooleConfig('websocket.server.enable', false);
         $serverClass = $isWebsocket ? WebsocketServer::class : HttpServer::class;
-        $config      = $this->app->config;
-        $host        = $config->get('swoole.server.host');
-        $port        = $config->get('swoole.server.port');
-        $socketType  = $config->get('swoole.server.socket_type', SWOOLE_SOCK_TCP);
-        $mode        = $config->get('swoole.server.mode', SWOOLE_PROCESS);
+        $host        = $this->getSwooleConfig('server.host');
+        $port        = $this->getSwooleConfig('server.port');
+        $socketType  = $this->getSwooleConfig('server.socket_type', SWOOLE_SOCK_TCP);
+        $mode        = $this->getSwooleConfig('server.mode', SWOOLE_PROCESS);
         
         /** @var SwooleServer $server */
         $server = new $serverClass($host, $port, $mode, $socketType);
         
         // 初始化配置
-        $options = $config->get('swoole.server.options', '') ?: [];
+        $options = $this->getSwooleConfig('server.options', '') ?: [];
         
         // 配置 Task 进程的数量，最大值不得超过 swoole_cpu_num() * 1000
         // https://wiki.swoole.com/#/server/setting?id=task_worker_num
@@ -225,7 +226,7 @@ class Server extends Command
         // https://wiki.swoole.com/#/http_server?id=enable_static_handler
         // https://wiki.swoole.com/#/http_server?id=document_root
         $options['enable_static_handler'] = true;
-        $options['document_root']         = $this->app->getRootPath() . 'public' . DIRECTORY_SEPARATOR;
+        $options['document_root']         = $this->app->getPublicPath();
         
         // 日志文件
         // https://wiki.swoole.com/#/server/setting?id=log_file

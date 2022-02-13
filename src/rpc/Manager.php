@@ -3,6 +3,8 @@
 namespace BusyPHP\swoole\rpc;
 
 use BusyPHP\App;
+use BusyPHP\swoole\concerns\InteractsWithWebSocketClient;
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use Swoole\Coroutine;
 use Swoole\Server;
 use Swoole\Server\Port;
@@ -35,8 +37,10 @@ class Manager
     use InteractsWithPools;
     use InteractsWithRpcClient;
     use InteractsWithQueue;
+    use InteractsWithWebSocketClient;
     use WithContainer;
     use WithApplication;
+    use WithSwooleConfig;
     
     /**
      * Server events.
@@ -145,6 +149,7 @@ class Manager
         $this->setSwooleServerListeners();
         $this->prepareRpcServer();
         $this->prepareQueue();
+        $this->prepareWebSocketClient();
         $this->prepareRpcClient();
     }
     
@@ -179,8 +184,8 @@ class Manager
     
     protected function bindRpcDispatcher()
     {
-        $services   = $this->getConfig('rpc.server.services', []);
-        $middleware = $this->getConfig('rpc.server.middleware', []);
+        $services   = $this->getSwooleConfig('rpc.server.services', []);
+        $middleware = $this->getSwooleConfig('rpc.server.middleware', []);
         
         $this->app->make(Dispatcher::class, [$services, $middleware]);
     }
@@ -188,7 +193,7 @@ class Manager
     
     protected function bindRpcParser()
     {
-        $parserClass = $this->getConfig('rpc.server.parser', JsonRpcParser::class);
+        $parserClass = $this->getSwooleConfig('rpc.server.parser', JsonRpcParser::class);
         
         $this->app->bind(RpcParserInterface::class, $parserClass);
         $this->app->make(RpcParserInterface::class);

@@ -2,6 +2,7 @@
 
 namespace BusyPHP\swoole\pool;
 
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use think\Config;
 use think\db\ConnectionInterface;
 use BusyPHP\swoole\pool\proxy\Connection;
@@ -15,6 +16,8 @@ use BusyPHP\swoole\pool\proxy\Connection;
  */
 class Db extends \BusyPHP\Db
 {
+    use WithSwooleConfig;
+    
     protected function createConnection(string $name) : ConnectionInterface
     {
         return new Connection(new class(function() use ($name) {
@@ -26,7 +29,7 @@ class Db extends \BusyPHP\Db
                     $connection->close();
                 }
             }
-        }, $this->config->get('swoole.pool.db', []));
+        }, $this->getSwooleConfig('pool.db', [], $this->config));
     }
     
     

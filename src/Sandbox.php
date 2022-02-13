@@ -5,6 +5,7 @@ namespace BusyPHP\swoole;
 use ArrayObject;
 use BusyPHP\exception\ClassNotImplementsException;
 use BusyPHP\Model as BusyModel;
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use Closure;
 use InvalidArgumentException;
 use ReflectionException;
@@ -36,6 +37,7 @@ use BusyPHP\swoole\App as SwooleApp;
 class Sandbox
 {
     use ModifyProperty;
+    use WithSwooleConfig;
     
     /**
      * 容器快照
@@ -314,7 +316,7 @@ class Sandbox
     {
         $app = $this->getBaseApp();
         
-        $services = $this->config->get('swoole.services', []);
+        $services = $this->getSwooleConfig('services', [], $this->config);
         
         foreach ($services as $service) {
             if (class_exists($service) && !in_array($service, $this->services)) {
@@ -339,7 +341,7 @@ class Sandbox
             ResetService::class,
         ];
         
-        $resetList = array_merge($resetList, $this->config->get('swoole.resetters', []));
+        $resetList = array_merge($resetList, $this->getSwooleConfig('resetters', [], $this->config));
         
         foreach ($resetList as $reset) {
             $impl = $app->make($reset);

@@ -8,6 +8,7 @@ use BusyPHP\swoole\app\controller\IndexController;
 use BusyPHP\swoole\command\Rpc;
 use BusyPHP\swoole\command\RpcInterface;
 use BusyPHP\swoole\command\Server as ServerCommand;
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use Closure;
 use think\Response;
 use think\Route;
@@ -20,6 +21,8 @@ use think\Route;
  */
 class Service extends \think\Service
 {
+    use WithSwooleConfig;
+    
     public function boot()
     {
         $this->registerRoutes(function(Route $route) {
@@ -35,19 +38,19 @@ class Service extends \think\Service
         });
         
         // 不公开服务
-        if (!$this->app->config->get('swoole.server.public', false)) {
+        if (!$this->getSwooleConfig('server.public', false)) {
             $this->app->middleware->add(function(Request $request, Closure $next) {
                 if ($this->app instanceof App) {
                     $mode = [];
-                    if ($this->app->config->get('swoole.websocket.enable', false)) {
+                    if ($this->getSwooleConfig('websocket.server.enable', false)) {
                         $mode[] = 'Websocket';
                     } else {
                         $mode[] = 'Http';
                     }
-                    if ($this->app->config->get('swoole.rpc.server.enable', false)) {
+                    if ($this->getSwooleConfig('rpc.server.enable', false)) {
                         $mode[] = 'Rpc';
                     }
-                    if ($this->app->config->get('swoole.tcp.server.enable', false)) {
+                    if ($this->getSwooleConfig('tcp.server.enable', false)) {
                         $mode[] = 'Tcp';
                     }
                     

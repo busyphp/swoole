@@ -7,6 +7,12 @@ use think\console\Output;
 use think\exception\Handle;
 use Throwable;
 
+/**
+ * WithContainer
+ * @author busy^life <busy.life@qq.com>
+ * @copyright (c) 2015--2022 ShanXi Han Tuo Technology Co.,Ltd. All rights reserved.
+ * @version $Id: 2022/2/13 11:22 AM WithContainer.php $
+ */
 trait WithContainer
 {
     /**
@@ -25,21 +31,13 @@ trait WithContainer
     }
     
     
-    protected function getContainer()
+    /**
+     * 获取容器对象
+     * @return App
+     */
+    protected function getContainer() : App
     {
         return $this->container;
-    }
-    
-    
-    /**
-     * 获取配置
-     * @param string $name
-     * @param null   $default
-     * @return mixed
-     */
-    public function getConfig(string $name, $default = null)
-    {
-        return $this->container->config->get("swoole.{$name}", $default);
     }
     
     
@@ -56,9 +54,9 @@ trait WithContainer
     
     /**
      * 监听事件
-     * @param string $event
-     * @param        $listener
-     * @param bool   $first
+     * @param string $event 事件名称
+     * @param mixed  $listener 监听操作（或者类名）
+     * @param bool   $first 是否优先执行
      */
     public function onEvent(string $event, $listener, bool $first = false) : void
     {
@@ -67,8 +65,7 @@ trait WithContainer
     
     
     /**
-     * Log server error.
-     *
+     * 处理异常
      * @param Throwable $e
      */
     public function logServerError(Throwable $e)

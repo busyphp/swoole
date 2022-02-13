@@ -44,8 +44,7 @@ trait InteractsWithSwooleTable
      */
     protected function registerTables()
     {
-        $tables = $this->container->make('config')->get('swoole.tables', []);
-        
+        $tables = $this->getSwooleConfig('tables', [], $this->container->make('config'));
         foreach ($tables as $key => $value) {
             $table   = new SwooleTable($value['size']);
             $columns = $value['columns'] ?? [];

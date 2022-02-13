@@ -126,9 +126,9 @@ trait InteractsWithWebsocket
      * @param Request $request
      * @return Request
      */
-    protected function setRequestThroughMiddleware(App $app, Request $request)
+    protected function setRequestThroughMiddleware(App $app, Request $request) : Request
     {
-        return Middleware::make($app, $this->getConfig('websocket.middleware', []))
+        return Middleware::make($app, $this->getSwooleConfig('websocket.server.middleware', []))
             ->pipeline()
             ->send($request)
             ->then(function($request) {
@@ -142,7 +142,7 @@ trait InteractsWithWebsocket
      */
     protected function prepareWebsocket()
     {
-        if (!$this->isWebsocketServer = $this->getConfig('websocket.enable', false)) {
+        if (!$this->isWebsocketServer = $this->getSwooleConfig('websocket.server.enable', false)) {
             return;
         }
         
@@ -184,13 +184,13 @@ trait InteractsWithWebsocket
     
     protected function prepareWebsocketListener()
     {
-        $listeners = $this->getConfig('websocket.listen', []);
+        $listeners = $this->getSwooleConfig('websocket.server.listen', []);
         
         foreach ($listeners as $event => $listener) {
             $this->app->event->listen('swoole.websocket.' . Str::studly($event), $listener);
         }
         
-        $subscribers = $this->getConfig('websocket.subscribe', []);
+        $subscribers = $this->getSwooleConfig('websocket.server.subscribe', []);
         
         foreach ($subscribers as $subscriber) {
             $this->app->event->observe($subscriber, 'swoole.websocket.');
@@ -203,7 +203,7 @@ trait InteractsWithWebsocket
      */
     protected function bindWebsocketHandler()
     {
-        $handlerClass = $this->getConfig('websocket.handler');
+        $handlerClass = $this->getSwooleConfig('websocket.server.handler');
         if ($handlerClass && is_subclass_of($handlerClass, Websocket::class)) {
             $this->app->bind(Websocket::class, $handlerClass);
         }

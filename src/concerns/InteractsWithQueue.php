@@ -30,14 +30,14 @@ trait InteractsWithQueue
      */
     protected function prepareQueue()
     {
-        if (!$this->getConfig('queue.enable', false)) {
+        if (!$this->getSwooleConfig('queue.enable', false)) {
             return;
         }
         
         $this->listenQueueEvents();
         $this->waitCoordinator('workerStart');
         
-        $workers = $this->getConfig('queue.workers', []);
+        $workers = $this->getSwooleConfig('queue.workers', []);
         foreach ($workers as $queue => $options) {
             // 队列驱动名称
             $connection = Arr::get($options, 'connection', null);

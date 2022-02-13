@@ -2,6 +2,7 @@
 
 namespace BusyPHP\swoole\command;
 
+use BusyPHP\swoole\concerns\WithSwooleConfig;
 use think\console\Command;
 use think\console\Input;
 use think\console\input\Argument;
@@ -11,6 +12,8 @@ use BusyPHP\swoole\rpc\Manager;
 
 class Rpc extends Command
 {
+    use WithSwooleConfig;
+    
     public function configure()
     {
         $this->setName('swoole:rpc')
@@ -28,7 +31,7 @@ class Rpc extends Command
         $this->app->bind(PidManager::class, function() {
             // 设置 pid 文件地址
             // https://wiki.swoole.com/#/server/setting?id=pid_file
-            $pidFile = $this->app->config->get('swoole.server.options.pid_file', '');
+            $pidFile = $this->getSwooleConfig('server.options.pid_file', '');
             $pidFile = $pidFile ?: $this->app->getRuntimeRootPath('swoole/run.pid');
             $pidDir  = dirname($pidFile);
             if (!is_dir($pidDir)) {
@@ -94,8 +97,8 @@ class Rpc extends Command
         
         $this->output->writeln('Starting swoole rpc server...');
         
-        $host = $this->app->config->get('swoole.server.host');
-        $port = $this->app->config->get('swoole.rpc.server.port');
+        $host = $this->getSwooleConfig('server.host');
+        $port = $this->getSwooleConfig('rpc.server.port');
         
         $this->output->writeln("Swoole rpc server started: <tcp://{$host}:{$port}>");
         $this->output->writeln('You can exit with <info>`CTRL-C`</info>');
@@ -180,16 +183,15 @@ class Rpc extends Command
      */
     protected function createSwooleServer()
     {
-        $config     = $this->app->config;
-        $host       = $config->get('swoole.server.host');
-        $port       = $config->get('swoole.rpc.server.port');
-        $socketType = $config->get('swoole.server.socket_type', SWOOLE_SOCK_TCP);
-        $mode       = $config->get('swoole.server.mode', SWOOLE_PROCESS);
+        $host       = $this->getSwooleConfig('server.host');
+        $port       = $this->getSwooleConfig('rpc.server.port');
+        $socketType = $this->getSwooleConfig('server.socket_type', SWOOLE_SOCK_TCP);
+        $mode       = $this->getSwooleConfig('server.mode', SWOOLE_PROCESS);
         
         $server = new \Swoole\Server($host, $port, $mode, $socketType);
         
         // 初始化配置
-        $options = $config->get('swoole.server.options', '') ?: [];
+        $options = $this->getSwooleConfig('server.options', '') ?: [];
         
         // 配置 Task 进程的数量，最大值不得超过 swoole_cpu_num() * 1000
         // https://wiki.swoole.com/#/server/setting?id=task_worker_num
@@ -199,7 +201,7 @@ class Rpc extends Command
         // https://wiki.swoole.com/#/http_server?id=enable_static_handler
         // https://wiki.swoole.com/#/http_server?id=document_root
         $options['enable_static_handler'] = true;
-        $options['document_root']         = $this->app->getRootPath() . 'public' . DIRECTORY_SEPARATOR;
+        $options['document_root']         = $this->app->getPublicPath();
         
         // 日志文件
         // https://wiki.swoole.com/#/server/setting?id=log_file

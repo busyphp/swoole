@@ -44,10 +44,10 @@ trait InteractsWithRpcClient
             //绑定rpc接口
             try {
                 foreach ($rpcServices as $name => $abstracts) {
-                    $parserClass = $this->getConfig("rpc.client.{$name}.parser", JsonRpcParser::class);
+                    $parserClass = $this->getSwooleConfig("rpc.client.{$name}.parser", JsonRpcParser::class);
                     $parser      = $this->getApplication()->make($parserClass);
                     $gateway     = new RpcGateway($this->createRpcConnector($name), $parser);
-                    $middleware  = $this->getConfig("rpc.client.{$name}.middleware", []);
+                    $middleware  = $this->getSwooleConfig("rpc.client.{$name}.middleware", []);
                     
                     foreach ($abstracts as $abstract) {
                         $this->getApplication()
@@ -67,7 +67,7 @@ trait InteractsWithRpcClient
     
     protected function bindRpcClientPool()
     {
-        if (!empty($clients = $this->getConfig('rpc.client'))) {
+        if (!empty($clients = $this->getSwooleConfig('rpc.client'))) {
             //创建client连接池
             foreach ($clients as $name => $config) {
                 $pool = new ConnectionPool(Pool::pullPoolConfig($config), new Client(), $config);

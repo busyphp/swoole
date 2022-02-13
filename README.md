@@ -45,7 +45,7 @@ su -c "php think swoole start|stop|restart" -s /bin/sh www
 
 参考：[https://github.com/busyphp/queue#readme](https://github.com/busyphp/queue#readme)
 
-#### 配置 `config/swoole.php`
+#### 配置 `config/busy-swoole.php`
 
 ```php
 <?php
@@ -89,7 +89,7 @@ return [
 
 ### 定时任务配置
 
-#### 配置 `config/swoole.php`
+#### 配置 `config/busy-swoole.php`
 
 ```php
 return [

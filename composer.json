@@ -28,7 +28,7 @@
 		"stechstudio/backoff"          : "^1.2",
 		"swoole/ide-helper"            : "^4.3",
 		"symfony/finder"               : "^4.3.2|^5.1",
-		"busyphp/queue"                : "^2.0",
+		"busyphp/queue"                : "^2.0.2",
 		"swlib/saber"                  : "^1.0"
 	},
 	"require-dev" : {

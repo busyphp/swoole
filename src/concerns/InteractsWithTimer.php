@@ -54,11 +54,10 @@ trait InteractsWithTimer
                     
                     // 阻塞模式
                     if ($worker::onTimerGetMode()) {
-                        $this->timerAfter($worker::onTimerGetMillisecond(), [
-                            $this,
-                            'runInSandbox'
-                        ], function() use ($worker, $process) {
-                            $worker::onTimerRun(new TimerParameter(0, $this->server, $this->app));
+                        $this->timerAfter($worker::onTimerGetMillisecond(), function() use ($worker, $process) {
+                            $this->runInSandbox(function() use ($worker, $process) {
+                                $worker::onTimerRun(new TimerParameter(0, $this->server, $this->app));
+                            });
                         });
                     } else {
                         Timer::tick($worker::onTimerGetMillisecond(), function(int $timeId) use ($worker) {
